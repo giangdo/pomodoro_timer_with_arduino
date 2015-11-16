@@ -53,7 +53,6 @@ int read_LCD_buttons(){               // read the buttons
     return btnNONE;                // when all others fail, return this.
 }
 
-
 unsigned long prevTime = 0;
 typedef enum status
 {
@@ -72,8 +71,85 @@ void setup(){
    lcd.print("Wo<-  Sb^  Lb->");  // print a simple message on the LCD
 }
   
-void loop(){  
+typedef enum mode
+{
+	countDownM = 0,
+	summaryM = 1,
+   modifyM = 2
+}eMode;
+const char * const countDownStr = "Count Down";
+const char * const summaryStr = "Summary";
+const char * const modifyStr = "Modify";
+typedef enum button
+{
+	selectB = 0,
+	breakB  = 1,
+	workB   = 2,
+	break1  = 3,
+	break2  = 4
+}eButton;
 
+typedef void (*buttonHdl) (eButton button,void *data);
+typedef void (*modeHdl) (void* data);
+typedef struct mode
+{
+	eMode cur; //this mode
+	const char *name; //this mode's string name
+	buttonHdl butHandler; //function pointer that point to button handler function   	
+	modeHdl modeHdl; //Function pointer that point to normal task handler of this mode
+	void *data;  //Internal data of this mode
+}tMode;
+
+//Interface between mode and main thread
+eMode curMode;
+char line1Buf[17]; //buffer that contain characters for first line in lcd
+char line1Blink[17]; //buffer that contain blink feature of each character for first line in lcd
+char line2Buf[17]; //buffer that contain character for second line in lcd
+char line2Blink[17];  //buffer that contain blink feature of each character of second line
+
+typedef enum counterType;
+{
+	workCounter = 0,
+	sBreakCounter = 1,
+	lBreakCounter = 2
+}eCounterType
+
+typedef struct countDown
+{
+	eMode nxt; //next mode
+	unsigned long prevTime;
+	eCounterType counterType;
+	char prevCounterType[17];
+}countDownT countDownData;
+
+typedef struct summary
+{
+	eMode nxt; //next mode
+}summaryT summaryData;
+
+typedef struct modify
+{
+	eMode nxt; //next mode
+}modifyT modifyData;
+
+void countDownBHdl(eButton button,void *data);
+void countDownHdl(void *data);
+void summaryBHdl(eButton button,void *data);
+void summaryHdl(void* data);
+void modifyBHdl(eButton button,void *data);
+// What is the mechanism to transfer data between mode
+tMode mode[3] =
+{
+	{countDownM, summaryM, countDownStr, countDownBHdl, countDownHdl, &countDownData},
+	{summaryM, modifyM, summaryStr, summaryBHdl, summaryHdl, &summaryData}, 
+	{modifyM, countDownM,modifyStr, modififyBHdl, modifyHdl, &modifyData}
+}
+void loop(){  
+	
+	// read button
+	// handle button function if there are button
+	// handle for mode (generate data buffer
+	// print character to lcd
    curSecond = (millis() - prevTime) / 1000;
    curMin = curSecond / 60;
    switch (status)
@@ -128,8 +204,8 @@ void loop(){
    if (status != St)
    {
       lcd.setCursor(7,1);             // move cursor to second line "1" and 9 spaces over             
-      lcd.print(resMin);
-      lcd.print(" ");
+      lcd.print(resMin);      
+      lcd.print("  ");
    }
    
    lcd_key = read_LCD_buttons();   // read the buttons
