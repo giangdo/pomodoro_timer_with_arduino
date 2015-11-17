@@ -41,60 +41,89 @@ Thế nào là một chu kỳ ko thành công ?
 	+ Khi đã kết thúc: Nhấn nút Fail.
 			
 * Định hướng lập trình (dành cho các bạn mới làm quen với lập trình nhúng)
-	+ Cần phải giải quyết bài toán MCU làm nhiều công việc cùng lúc:
+	+ Cần phải giải quyết bài toán MCU làm nhiều công việc gần như cùng lúc (lập trình song song):
 		- MCU phải điều khiển chip LCD driver để hiển thị ký tự trên LCD
 		- MCU phải đọc giá trị ADC để biết nút nhấn nào được nhấn
 		- MCU phải tăng giá trị timer để làm bộ đếm lùi
+		- MCU phải tính toán để quyết định hiển thị cái gì ra màn hình.
+
+		-> Hướng giải quyết:
+		 	. Các công việc tất nhiên sẽ được thực hiện 1 cách tuần tự. (vì ko có nhiều core trong MCU)
+			. Các công việc phải được chia rất nhỏ (thời gian thực hiện rất ngắn, tính bằng micro giấy)
+		 	. Ko thể để một công việc chiếm quá nhiều thời gian xử lý khiến cho tất cả các chức năng
+			  khác ko thể thực thi.
+			  Ví dụ: Chắc chắn là khi MCU điều khiển LCD, MCU sẽ ko thể nhận biết được nút nhấn.
+			  			Vậy nếu ta cách ta lập trình khiến cho MCU tốn nhiều thời gian cho điều khiển LCD,
+						MCU sẽ hầu như ko nhận được tín hiệu nhấn nút được do lúc ta nhấn nút
+						thì MCU đang bận điều khiển LCD rồi.
 
 	+ Cần phải giải quyết bài toán máy trạng thái:
 		- Chỉ cần nhấn một nút Select thì có thể chuyển qua lần lượt 3 mode, tức là chuyển trạng
 		  thái chỉ thông qua một nút nhấn chứ ko phải là mỗi nút nhấn một trạng thái.
-		- Ở mỗi mode, nút nhấn có chức năng khác nhau.
+
+		- Ngoài ra ở mỗi mode, nút nhấn cũng có chức năng khác nhau.
+
+		-> Hướng giải quyết:
+			. Dùng bảng để thể hiện máy trạng thái.
+			. Dùng con trỏ hàm để thể hiện chức năng của mỗi nút nhấn.
 
 **************************************************************************************/
  
+/* Khai báo sử dụng thư viện điều khiển LCD */
 #include <LiquidCrystal.h>
  
-LiquidCrystal lcd(8, 9, 4, 5, 6, 7); // Chọn chân GPIO trên chip ATMELL để điều khiển LCD
+#define LCD_D0 8  //GPIO8 của MCU nối với chân LCD D0
+#define LCD_D1 9  //GPIO9 của MCU nối với chân LCD D1
+#define LCD_D2 4  //GPIO4 của MCU nối với chân LCD D2
+#define LCD_D3 5  //GPIO5 của MCU nối với chân LCD D3
+#define LCD_D4 6  //GPIO6 của MCU nối với chân LCD D4
+#define LCD_D5 7  //GPIO7 của MCU nối với chân LCD D5
+// Khai báo một object của lớp LiquidCrystal,
+// đồng thời thông qua constructor của lớp này xác định chân GPIO trên MCU dùng để điều khiển LCD 
+// Thư viện LiquidCrystal viết bằng C++ ở arduino-1.6.6/libraries/LiquidCrystal/src/LiquidCrystal.h 
+LiquidCrystal lcd(LCD_D0, LCD_D1, LCD_D2, LCD_D3, LCD_D4, LCD_D5);
+
+typedef enum button
+{
+	selectB = 0, // Select Button      <=> nút Select ở board lcd shield
+	failB   = 1, // Fail Button        <=> nút Left   ở board lcd shield
+	workB   = 2, // Work Button        <=> nút Up     ở board lcd shield
+	sBreakB = 3, // Short Break Button <=> nút Down   ở board lcd shield
+	lBreakB = 4, // Long Break Button  <=> nút Right  ở board lcd shield
+   noneB	  = 5  // Không có nút nào được nhấn
+}eButton;
+
+#define adcPIN 0 //Chần GPIO 0 của MCU được nối với bộ nút nhấn của board LCD shield
+
+// Hàm này dùng để xác định nút đã được nhấn trên board lcd shield
+eButton read_buttons(){
+	// MCU đọc giá trị của hiệu điện thế từ chân ADC (Analog Digital Converter)
+	// hàm analogRead() được khai báo trong arduino-1.6.6/hardware/arduino/avr/cores/arduino/wiring_analog.c
+    int adc = analogRead(adcPIN); 
+
+	// Thủ thuật hay: Bằng cách nối các nút nhấn vào một chân ADC của MCU như trong board
+	// LCD shield này ta có thể xác định được trạng thái của nút nhấn thông qua giá trị
+	// hiệu điện thế của một chân MCU. -> Tiết kiệm được chân MCU vì cách thông thường là
+	// mỗi nút nhấn sẽ được kiểm soát bởi một chân MCU.
+		 
+ 	 // Khi adc là rất lớn ,gần như vô cùng -> ko có nút nào được nhấn
+    if (adc > 1000) return noneB; 
  
-// define some values used by the panel and buttons
-int lcd_key     = 0;
-int adc_key_in  = 0;
+	 // Nếu dùng board LCD shield version 1.0 thì dùng bảng sau xóa bảng còn lại
+    if (adc < 50)  return lBreakB; //Khi nhấn nút lBreak  giá trị chính xác trả về là 0
+    if (adc < 195) return workB;   //Khi nhấn nút workB   giá trị chính xác trả về là 144 
+    if (adc < 380) return sBreakB; //Khi nhấn nút sBreakB giá trị chính xác trả về là 329 
+    if (adc < 555) return failB;   //Khi nhấn nút failB   giá trị chính xác trả về là 504 
+    if (adc < 790) return selectB; //Khi nhấn nút selectB giá trị chính xác trả về là 741 
  
-#define btnRIGHT  0
-#define btnUP     1
-#define btnDOWN   2
-#define btnLEFT   3
-#define btnSELECT 4
-#define btnNONE   5
- 
-int read_LCD_buttons(){               // read the buttons
-    adc_key_in = analogRead(0);       // read the value from the sensor 
- 
-    // my buttons when read are centered at these valies: 0, 144, 329, 504, 741
-    // we add approx 50 to those values and check to see if we are close
-    // We make this the 1st option for speed reasons since it will be the most likely result
- 
-    if (adc_key_in > 1000) return btnNONE; 
- 
-    // For V1.1 us this threshold
-    /*
-    if (adc_key_in < 50)   return btnRIGHT;  
-    if (adc_key_in < 250)  return btnUP; 
-    if (adc_key_in < 450)  return btnDOWN; 
-    if (adc_key_in < 650)  return btnLEFT; 
-    if (adc_key_in < 850)  return btnSELECT;  
-    */
-   // For V1.0 comment the other threshold and use the one below:
-   
-     if (adc_key_in < 50)   return btnRIGHT;  
-     if (adc_key_in < 195)  return btnUP; 
-     if (adc_key_in < 380)  return btnDOWN; 
-     if (adc_key_in < 555)  return btnLEFT; 
-     if (adc_key_in < 790)  return btnSELECT;   
-   
- 
-    return btnNONE;                // when all others fail, return this.
+	 // Nếu dùng board LCD shield version 1.1 thì dùng bảng sau xóa bảng còn lại
+    // if (adc_key_in < 50)   return lBreakB;  
+    // if (adc_key_in < 250)  return workB; 
+    // if (adc_key_in < 450)  return sBreakB; 
+    // if (adc_key_in < 650)  return failB; 
+    // if (adc_key_in < 850)  return selectB;
+
+    return noneB;
 }
 
 unsigned long prevTime = 0;
@@ -105,15 +134,11 @@ typedef enum status
   Lb = 2, //Long Break
   St = 3  //Stop
 }eStatus;
+
 eStatus status = Wo;
 unsigned long curSecond = 0;
 unsigned long curMin = 0;
 unsigned long resMin = 0;
-void setup(){
-   lcd.begin(16, 2);               // start the library
-   lcd.setCursor(0,0);             // set the LCD cursor   position 
-   lcd.print("Wo<-  Sb^  Lb->");  // print a simple message on the LCD
-}
   
 typedef enum mode
 {
@@ -124,14 +149,6 @@ typedef enum mode
 const char * const countDownStr = "Count Down";
 const char * const summaryStr = "Summary";
 const char * const modifyStr = "Modify";
-typedef enum button
-{
-	selectB = 0,
-	breakB  = 1,
-	workB   = 2,
-	break1  = 3,
-	break2  = 4
-}eButton;
 
 typedef void (*buttonHdl) (eButton button,void *data);
 typedef void (*modeHdl) (void* data);
@@ -188,9 +205,20 @@ tMode mode[3] =
 	{summaryM, modifyM, summaryStr, summaryBHdl, summaryHdl, &summaryData}, 
 	{modifyM, countDownM,modifyStr, modififyBHdl, modifyHdl, &modifyData}
 }
+
+void setup(){
+   lcd.begin(16, 2);               // start the library
+   lcd.setCursor(0,0);             // set the LCD cursor   position 
+   lcd.print("Wo<-  Sb^  Lb->");  // print a simple message on the LCD
+}
+
 void loop(){  
-	
-	// read button
+	// Đây là vòng lặp lớn nhất của chương trình, sau khi khởi động xong, MCU sẽ chỉ thực thi
+	// trong vòng lặp này mà thôi.
+
+	// Đọc tín hiệu ADC để biết nút nào đã được nhấn
+   eButton = read_buttons(); 
+
 	// handle button function if there are button
 	// handle for mode (generate data buffer
 	// print character to lcd
