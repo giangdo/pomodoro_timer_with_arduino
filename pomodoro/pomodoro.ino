@@ -72,17 +72,26 @@ Thế nào là một chu kỳ ko thành công ?
 /* Khai báo sử dụng thư viện điều khiển LCD */
 #include <LiquidCrystal.h>
  
+// Kỹ thuật sử dụng macro để tránh sử dụng những con số vô nghĩa trong lập trình
+// XXX please check this again
 #define LCD_D0 8  //GPIO8 của MCU nối với chân LCD D0
 #define LCD_D1 9  //GPIO9 của MCU nối với chân LCD D1
 #define LCD_D2 4  //GPIO4 của MCU nối với chân LCD D2
 #define LCD_D3 5  //GPIO5 của MCU nối với chân LCD D3
 #define LCD_D4 6  //GPIO6 của MCU nối với chân LCD D4
 #define LCD_D5 7  //GPIO7 của MCU nối với chân LCD D5
-// Khai báo một object của lớp LiquidCrystal,
-// đồng thời thông qua constructor của lớp này xác định chân GPIO trên MCU dùng để điều khiển LCD 
+#define COLUM_0 0
+#define COLUM_1 1
+#define NUMBER_OF_COLUM 16
+#define LINE_0 0
+#define LINE_1 1
+#define NUMBER_OF_LINE 2
+// Khai báo một object của lớp LiquidCrystal, đồng thời thông qua constructor của lớp
+// này xác định các chân GPIO trên MCU dùng để điều khiển LCD 
 // Thư viện LiquidCrystal viết bằng C++ ở arduino-1.6.6/libraries/LiquidCrystal/src/LiquidCrystal.h 
 LiquidCrystal lcd(LCD_D0, LCD_D1, LCD_D2, LCD_D3, LCD_D4, LCD_D5);
 
+// Kỹ thuật sử dụng enum để tránh sử dụng những con số vô nghĩa trong lập trình 
 typedef enum button
 {
 	selectB = 0, // Select Button      <=> nút Select ở board lcd shield
@@ -206,10 +215,34 @@ tMode mode[3] =
 	{modifyM, countDownM,modifyStr, modififyBHdl, modifyHdl, &modifyData}
 }
 
-void setup(){
-   lcd.begin(16, 2);               // start the library
-   lcd.setCursor(0,0);             // set the LCD cursor   position 
-   lcd.print("Wo<-  Sb^  Lb->");  // print a simple message on the LCD
+void setup()
+{
+	// Khởi động LCD dùng hàm void LiquidCrystal::begin(uint8_t cols, uint8_t lines, uint8_t dotsize)
+	// và dùng kỹ thuật default argument trong C++ để không cần cung cấp thông tin về dotsize
+	// mà lấy giá trị mặc định LCD_5x8DOTS.
+	// LCD_5x8DOTS5x8 có ý nghĩa là lcd dùng ô chữ chật 5x8 = 40 điểm để hiển thị 1 ký tự
+	lcd.begin(NUMBER_OF_COLUM, NUMBER_OF_LINE);
+
+
+	lcd.setCursor(COLUM_0,LINE_0);  // di chuyển con trỏ của LCD đến dòng đầu tiên, cột đầu tiên
+
+	// Dùng hàm size_t Print::print(const char str[]) ở arduino-1.6.6/hardware/arduino/avr/cores/arduino/Print.cpp
+	// để in dòng chữ "Wellcome"
+	// Kỹ thuật inheritance trong C++ được sử dụng, đối tượng của lớp LiquidCrystal có thể gọi hàm của lớp Print
+	// vì lớp LiquidCrystal thừa kế theo kiểu public lớp Print
+	lcd.print("Welcome");    
+
+	// In số 0 rồi 1 rồi 2 ... 
+	for (int i = 0; i < 3, i++)
+	{
+		lcd.setCursor(COLUM_0,LINE_1);
+		lcd.print(i);
+		delay(1000); 	//dừng 1000ms, hàm này ở arduino-1.6.6/hardware/arduino/avr/cores/arduino/wiring.c
+	}
+
+	// In "Pomodoro Now!"
+	lcd.setCursor(COLUM_0,LINE_1);
+	lcd.print(i);  // in dòng chữ "Let's Pomodoro", ở đây kỹ thuật overwrite function
 }
 
 void loop(){  
