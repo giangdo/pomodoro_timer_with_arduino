@@ -1,49 +1,49 @@
 /*************************************************************************************
-Giang Do (Đỗ Trường Giang), November 2015
  
-Đây là chương trình Pomodoro Timer dùng lcd-button shield và ardunio U3
+  Giang Do (Đỗ Trường Giang), November 2015
+ 
+  Đây là chương trình Pomodoro Timer dùng lcd-button shield và ardunio U3
 
-Chương trình gồm có 3 mode chính:
-	+ Countdown(đếm lùi): đây là mode chính của chương trình, cho phép thiết lập thời
-		gian đếm lùi theo 3 kiểu và phát tín hiệu cảnh báo khi thời gian lùi về 0.
-			- Working : Làm việc
-			- Long Break : Nghỉ dài
-			- Short Break : Nghỉ ngắn
-	+ Summary(Tổng hợp): đây là mode dùng để hiển thị kết quả số lẩn thực hiện thành công của
-		từng kiểu đếm lùi. từ khi đồng hồ pomodoro này được khởi động chạy.
+  Chương trình gồm có 3 mode chính:
+		+ Countdown(đếm lùi): đây là mode chính của chương trình, cho phép thiết lập thời
+			gian đếm lùi theo 3 kiểu và phát tín hiệu cảnh báo khi thời gian lùi về 0.
+				- Working : Làm việc
+				- Long Break : Nghỉ dài
+				- Short Break : Nghỉ ngắn
+		+ Summary(Tổng hợp): đây là mode dùng để hiển thị kết quả số lẩn thực hiện thành công của
+			từng kiểu đếm lùi. từ khi đồng hồ pomodoro này được khởi động chạy.
 
-	+ Modify(Điều chỉnh): đây là mode dùng để điểu chỉnh khoảng thời gian cho mỗi kiểu đếm lùi.
-		Giá trị mặc định là:
-		- Working: 25 phút
-		- Long Break: 15 phút
-		- Short Break: 5 phút 
+		+ Modify(Điều chỉnh): đây là mode dùng để điểu chỉnh khoảng thời gian cho mỗi kiểu đếm lùi.
+			Giá trị mặc định là:
+			- Working: 25 phút
+			- Long Break: 15 phút
+			- Short Break: 5 phút 
 
-Cách sử dụng:
-	+ Chuyển mode: nhấn nút Select
-	+ Trong mode countdown:
-		- Để bắt đầu đếm lùi Nhấn nút Work, hoặc LBreak, hoặc SBreak để bắt đầu đếm lùi
-		   theo kiểu Làm Việc, Nghỉ dài, nghỉ ngắn.
-		- Nhấn nút Fail để xác nhận chu kỳ đang thực hiện cũng như vừa thực hiện xong ko thành công.
-		- Nhấn Select để chuyển qua mode Summary
+	Cách sử dụng:
+		+ Chuyển mode: nhấn nút Select
+		+ Trong mode countdown:
+			- Để bắt đầu đếm lùi Nhấn nút Work, hoặc LBreak, hoặc SBreak để bắt đầu đếm lùi
+			   theo kiểu Làm Việc, Nghỉ dài, nghỉ ngắn.
+			- Nhấn Select để chuyển qua mode Summary
 
-	+ Trong mode Summary: xem số lần làm việc/nghỉ ngắn/nghỉ dài thành công
-		- Nhấn nút Fail để thiết lập lại tất cả giá trị các bộ đếm về 0
-		- Nhấn Select để chuyển qua mode Modify
+		+ Trong mode Summary: xem số lần làm việc/nghỉ ngắn/nghỉ dài thành công
+			- Nhấn Select để chuyển qua mode Modify
+		+ Trong mode Modify: 
+			- Nhấn nút Work để chỉnh giá trị cho thời gian Làm việc
+			- Nhấn nút LBreak, để chỉnh giá trị cho thời gian nghỉ dài
+			- Nhấn nút SBreak để chỉnh giá trị cho thời gian nghỉ ngắn
 
-	+ Trong mode Modify: 
-		- Nhấn nút Work, hoặc LBreak, hoặc SBreakWork  chỉnh giá trị cho thời gian Làm việc,
-		  Nghỉ dài, Nghỉ ngắn
-
-		- Nút Select để chuyển mode và lưu giá trị thay đổi
-
-Thế nào là một chu kỳ thành công ?
-	+ Một chu kì chỉ được xác định là thành công chỉ khi đồng hồ đếm lùi đã về 0
-	  và người dùng ko nhấn nút Fail sau đó.
-
-Thế nào là một chu kỳ ko thành công ?
-	+ Trong lúc đang đếm lùi: Nhấn bất kỳ một nút nào đó
-	+ Khi đã kết thúc: Nhấn nút Fail.
+			- Trong lúc đang đếm lùi (chưa về 0)
+			- Khi thời gian về 0 màn hình sẽ hiển thị "Please stop now"
+			- Nếu thấy mình thực sự làm việc/nghỉ ngơi tốt thì trong vòng 2 phút kể từ lúc hiện
+			  thông báo "Please stop now" phải nhấn nút work/lbreak/sbreak để bắt đầu 1 chu kỳ mới.
+			  Và chu kì này sẽ được tính là một chu kỳ thành công.
+			 
+			- Nếu không, màn hình sẽ hiển thị "Broken, Stop now"
 			
+, 
+			  
+
 **************************************************************************************/
  
 #include <LiquidCrystal.h>
