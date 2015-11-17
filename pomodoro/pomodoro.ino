@@ -1,7 +1,7 @@
 /*************************************************************************************
 Giang Do (Đỗ Trường Giang), November 2015
  
-Đây là chương trình Pomodoro Timer dùng lcd-button shield và ardunio U3
+Đây là chương trình Pomodoro Timer dùng hai bo mạch lcd-button shield và Ardunio U3
 
 Chương trình gồm có 3 mode chính:
 	+ Countdown(đếm lùi): đây là mode chính của chương trình, cho phép thiết lập thời
@@ -19,22 +19,18 @@ Chương trình gồm có 3 mode chính:
 		- Short Break: 5 phút 
 
 Cách sử dụng:
-	+ Chuyển mode: nhấn nút Select
-	+ Trong mode countdown:
+	+ Nhấn Select để chuyển mode: Countdown -> Summary -> Modify -> Countdown
+	+ Trong mode Countdown:
 		- Để bắt đầu đếm lùi Nhấn nút Work, hoặc LBreak, hoặc SBreak để bắt đầu đếm lùi
 		   theo kiểu Làm Việc, Nghỉ dài, nghỉ ngắn.
 		- Nhấn nút Fail để xác nhận chu kỳ đang thực hiện cũng như vừa thực hiện xong ko thành công.
-		- Nhấn Select để chuyển qua mode Summary
 
 	+ Trong mode Summary: xem số lần làm việc/nghỉ ngắn/nghỉ dài thành công
 		- Nhấn nút Fail để thiết lập lại tất cả giá trị các bộ đếm về 0
-		- Nhấn Select để chuyển qua mode Modify
 
 	+ Trong mode Modify: 
-		- Nhấn nút Work, hoặc LBreak, hoặc SBreakWork  chỉnh giá trị cho thời gian Làm việc,
+		- Nhấn nút Work, hoặc LBreak, hoặc SBreakWork chỉnh giá trị cho thời gian Làm việc,
 		  Nghỉ dài, Nghỉ ngắn
-
-		- Nút Select để chuyển mode và lưu giá trị thay đổi
 
 Thế nào là một chu kỳ thành công ?
 	+ Một chu kì chỉ được xác định là thành công chỉ khi đồng hồ đếm lùi đã về 0
@@ -44,11 +40,22 @@ Thế nào là một chu kỳ ko thành công ?
 	+ Trong lúc đang đếm lùi: Nhấn bất kỳ một nút nào đó
 	+ Khi đã kết thúc: Nhấn nút Fail.
 			
+* Định hướng lập trình (dành cho các bạn mới làm quen với lập trình nhúng)
+	+ Cần phải giải quyết bài toán MCU làm nhiều công việc cùng lúc:
+		- MCU phải điều khiển chip LCD driver để hiển thị ký tự trên LCD
+		- MCU phải đọc giá trị ADC để biết nút nhấn nào được nhấn
+		- MCU phải tăng giá trị timer để làm bộ đếm lùi
+
+	+ Cần phải giải quyết bài toán máy trạng thái:
+		- Chỉ cần nhấn một nút Select thì có thể chuyển qua lần lượt 3 mode, tức là chuyển trạng
+		  thái chỉ thông qua một nút nhấn chứ ko phải là mỗi nút nhấn một trạng thái.
+		- Ở mỗi mode, nút nhấn có chức năng khác nhau.
+
 **************************************************************************************/
  
 #include <LiquidCrystal.h>
  
-LiquidCrystal lcd(8, 9, 4, 5, 6, 7);           // select the pins used on the LCD panel
+LiquidCrystal lcd(8, 9, 4, 5, 6, 7); // Chọn chân GPIO trên chip ATMELL để điều khiển LCD
  
 // define some values used by the panel and buttons
 int lcd_key     = 0;
