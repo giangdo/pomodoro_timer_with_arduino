@@ -100,12 +100,12 @@ typedef enum button
 	sBreakB = 3, // Short Break Button <=> nút Down   ở board lcd shield
 	lBreakB = 4, // Long Break Button  <=> nút Right  ở board lcd shield
    noneB	  = 5  // Không có nút nào được nhấn
-}eButton;
+}E_Button; //Enum Button
 
 #define adcPIN 0 //Chần GPIO 0 của MCU được nối với bộ nút nhấn của board LCD shield
 
 // Hàm này dùng để xác định nút đã được nhấn trên board lcd shield
-eButton read_buttons(){
+E_Button read_buttons(){
 	// MCU đọc giá trị của hiệu điện thế từ chân ADC (Analog Digital Converter)
 	// hàm analogRead() được khai báo trong arduino-1.6.6/hardware/arduino/avr/cores/arduino/wiring_analog.c
     int adc = analogRead(adcPIN); 
@@ -138,81 +138,94 @@ eButton read_buttons(){
 unsigned long prevTime = 0;
 typedef enum status
 {
-  Wo = 0, //Working
-  Sb = 1, //Short Break
-  Lb = 2, //Long Break
-  St = 3  //Stop
-}eStatus;
+  Wo = 0,  //Working
+  Sb = 1,  //Short Break
+  Lb = 2,  //Long Break
+  St = 3   //Stop
+}E_Status; // Enum Status
 
-eStatus status = Wo;
 unsigned long curSecond = 0;
 unsigned long curMin = 0;
 unsigned long resMin = 0;
   
 typedef enum mode
 {
-	countDownM = 0,
-	summaryM = 1,
-   modifyM = 2
-}eMode;
-const char * const countDownStr = "Count Down";
-const char * const summaryStr = "Summary";
-const char * const modifyStr = "Modify";
+	countDownM = 0, // Countdown Mode
+	summaryM   = 1, // Summary Mode
+   modifyM    = 2, // Modify Mode
+   noneM      = 3  // None Mode, this is use as polar
+}E_Mode; // Enum mode
 
 typedef void (*buttonHdl) (eButton button,void *data);
 typedef void (*modeHdl) (void* data);
 typedef struct mode
 {
-	eMode cur; //this mode
-	const char *name; //this mode's string name
-	buttonHdl butHandler; //function pointer that point to button handler function   	
-	modeHdl modeHdl; //Function pointer that point to normal task handler of this mode
-	void *data;  //Internal data of this mode
-}tMode;
+	E_Mode mode; //Mode
+	buttonHdl buttonHandler; //function pointer that point to button handler function   	
+	modeHdl taskHandler; //Function pointer that point to normal task handler of this mode
+}T_Mode;
 
 //Interface between mode and main thread
-eMode curMode;
-char line1Buf[17]; //buffer that contain characters for first line in lcd
-char line1Blink[17]; //buffer that contain blink feature of each character for first line in lcd
-char line2Buf[17]; //buffer that contain character for second line in lcd
-char line2Blink[17];  //buffer that contain blink feature of each character of second line
+typedef struct lcdBuffer
+{
+	char line1Buf[17]; //buffer that contain characters for first line in lcd
+	char line1Blink[17]; //buffer that contain blink feature of each character for first line in lcd
+	char line1PreState[17]; //buffer that contain blink feature of each character for first line in lcd
+	char line2Buf[17]; //buffer that contain character for second line in lcd
+	char line2Blink[17];  //buffer that contain blink feature of each character of second line
+	char line2PreState[17]; //buffer that contain blink feature of each character for first line in lcd
+}T_LcdBuffer g_LcdBuffer;
 
 typedef enum counterType;
 {
 	workCounter = 0,
 	sBreakCounter = 1,
 	lBreakCounter = 2
-}eCounterType
+}E_CounterType;
 
-typedef struct countDown
+typedef struct countDown 
 {
-	eMode nxt; //next mode
 	unsigned long prevTime;
 	eCounterType counterType;
 	char prevCounterType[17];
-}countDownT countDownData;
+}T_CountDown;
 
 typedef struct summary
 {
-	eMode nxt; //next mode
-}summaryT summaryData;
+	unsigned char workSuccess;   // Number of time that we finish work period
+	unsigned char sBreakSuccess; // Number of time that we finish short break period
+	unsigned char lBreakSuccess; // Number of time that we finish long break period
+}T_Summary;
 
 typedef struct modify
 {
 	eMode nxt; //next mode
-}modifyT modifyData;
+	unsigned char workPeriod;
+	unsigned char sBreakPeriod;
+	unsigned char lBreakPeriod; 
+}T_Modify;
 
-void countDownBHdl(eButton button,void *data);
-void countDownHdl(void *data);
-void summaryBHdl(eButton button,void *data);
-void summaryHdl(void* data);
-void modifyBHdl(eButton button,void *data);
-// What is the mechanism to transfer data between mode
-tMode mode[3] =
+typedef struct dataBlock
 {
-	{countDownM, summaryM, countDownStr, countDownBHdl, countDownHdl, &countDownData},
-	{summaryM, modifyM, summaryStr, summaryBHdl, summaryHdl, &summaryData}, 
-	{modifyM, countDownM,modifyStr, modififyBHdl, modifyHdl, &modifyData}
+	T_CountDown countDownData;
+	T_Summary   summaryData;
+	T_Modify    modifyData;
+   E_Mode      curMode;
+}T_DataBlock g_DataBlock;
+
+void countDownButtonHdl(E_Button button)
+void countDownTaskHdl();
+void summaryButtonHdl(E_Button button)
+void summaryTaskHdl();
+void modifyButtonHdl(E_Button button)
+void modifyTaskHdl();
+
+// What is the mechanism to transfer data between mode
+T_Mode g_Mode[] = // global variable mode
+{
+	{countDownM , countDownButtonHdl , countDownTaskHdl},
+	{summaryM   , summaryButtonHdl   , summaryTaskHdl  },
+	{modifyM    , modififyButtonHdl  , modifyTaskHdl   }
 }
 
 void setup()
@@ -236,21 +249,62 @@ void setup()
 	for (int i = 0; i < 3, i++)
 	{
 		lcd.setCursor(COLUM_0,LINE_1);
-		lcd.print(i);
+		lcd.print(i);  //XXX need to comment here
 		delay(1000); 	//dừng 1000ms, hàm này ở arduino-1.6.6/hardware/arduino/avr/cores/arduino/wiring.c
 	}
 
 	// In "Pomodoro Now!"
-	lcd.setCursor(COLUM_0,LINE_1);
-	lcd.print(i);  // in dòng chữ "Let's Pomodoro", ở đây kỹ thuật overwrite function
+	char string[12];
+	string[0]  = 'P';
+	string[1]  = 'o';
+	string[2]  = 'm';
+	string[3]  = 'o';
+	string[4]  = 'd';
+	string[5]  = 'o';
+	string[6]  = 'r';
+	string[7]  = 'o';
+	string[8]  = ' ';
+	string[9]  = 'N';
+	string[10] = 'o';
+	string[11] = 'w';
+	string[12] = '!';
+	for (int j = 0; j < sizeof(string); j++)
+	{
+		lcd.setCursor(j,LINE_1); // XXX need to comment here
+		lcd.print(string[j]);  
+	}
+	// XXX need to comment about polimophism technique
+	// XXX need to comment about overwrite function technique in print function
 }
 
 void loop(){  
 	// Đây là vòng lặp lớn nhất của chương trình, sau khi khởi động xong, MCU sẽ chỉ thực thi
 	// trong vòng lặp này mà thôi.
 
-	// Đọc tín hiệu ADC để biết nút nào đã được nhấn
-   eButton = read_buttons(); 
+	while (1)
+	{
+		// Đọc tín hiệu ADC để biết nút nào đã được nhấn
+		eButton button = read_buttons(); 
+
+		// XXX
+		unsigned int modeIndex;
+		for (modeIndex = 0; modeIndex < (sizeof(g_Mode) / sizeof(T_Mode)); i++)
+		{
+			if (g_Mode[modeIndex].mode == g_DataBlock.curMode)
+			{
+				g_Mode[modeIndex].buttonHandler(button);
+				g_Mode[modeIndex].taskHandler();
+				break;
+			}
+		}
+		if (modeIndex == (sizeof(g_Mode) / sizeof(T_Mode)))
+		{
+			// Should never come into this case!
+		}
+
+		// XXX
+
+	}
 
 	// handle button function if there are button
 	// handle for mode (generate data buffer
