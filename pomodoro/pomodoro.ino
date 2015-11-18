@@ -136,13 +136,14 @@ E_Button read_buttons(){
 }
 
 unsigned long prevTime = 0;
-typedef enum status
+typedef enum state
 {
-  Wo = 0,  //Working
-  Sb = 1,  //Short Break
-  Lb = 2,  //Long Break
-  St = 3   //Stop
-}E_Status; // Enum Status
+  workState   = 0,  //Working state
+  sBreakState = 1,  //Short Break state
+  lBreakState = 2,  //Long Break state 
+  stopState   = 3,  //Stop state
+  notifyState = 4   // Notify state
+}E_State; // Enum State
 
 unsigned long curSecond = 0;
 unsigned long curMin = 0;
@@ -168,26 +169,24 @@ typedef struct mode
 //Interface between mode and main thread
 typedef struct lcdBuffer
 {
-	char line1Buf[17]; //buffer that contain characters for first line in lcd
-	char line1Blink[17]; //buffer that contain blink feature of each character for first line in lcd
-	char line1PreState[17]; //buffer that contain blink feature of each character for first line in lcd
-	char line2Buf[17]; //buffer that contain character for second line in lcd
-	char line2Blink[17];  //buffer that contain blink feature of each character of second line
-	char line2PreState[17]; //buffer that contain blink feature of each character for first line in lcd
+	char lcdBuf[2][17]; //
+	char lcdBufBlink[2][17];  //XXX should change to bit technique here
+	char lcdBufPrev[2][17];
 }T_LcdBuffer g_LcdBuffer;
 
-typedef enum counterType;
+typedef enum bool
 {
-	workCounter = 0,
-	sBreakCounter = 1,
-	lBreakCounter = 2
-}E_CounterType;
-
+	False = 0,
+	True  = 1
+}E_Bool;
 typedef struct countDown 
 {
 	unsigned long prevTime;
-	eCounterType counterType;
-	char prevCounterType[17];
+	E_State state;
+	E_Bool isNewState;
+	E_Bool countDone;
+	unsigned long mileStone;
+	char prevState[17];
 }T_CountDown;
 
 typedef struct summary
@@ -208,16 +207,17 @@ typedef struct modify
 typedef struct dataBlock
 {
 	T_CountDown countDownData;
-	T_Summary   summaryData;
-	T_Modify    modifyData;
+	T_Count     work;
+	T_Count     sBreak;
+	T_Count     lBreak;
    E_Mode      curMode;
 }T_DataBlock g_DataBlock;
 
-void countDownButtonHdl(E_Button button)
+void countDownButtonHdl(E_Button button);
 void countDownTaskHdl();
-void summaryButtonHdl(E_Button button)
+void summaryButtonHdl(E_Button button);
 void summaryTaskHdl();
-void modifyButtonHdl(E_Button button)
+void modifyButtonHdl(E_Button button);
 void modifyTaskHdl();
 
 // What is the mechanism to transfer data between mode
@@ -226,6 +226,116 @@ T_Mode g_Mode[] = // global variable mode
 	{countDownM , countDownButtonHdl , countDownTaskHdl},
 	{summaryM   , summaryButtonHdl   , summaryTaskHdl  },
 	{modifyM    , modififyButtonHdl  , modifyTaskHdl   }
+}
+
+typedef struct count
+{
+	unsigned char period;
+	unsigned char remain; 
+
+	unsigned char success;
+	unsigned char fail;
+
+}T_Count;
+
+void countDownButtonHdl(E_Button button)
+{
+	switch (button)
+	{
+		case selectB:
+		{
+			g_DataBlock.curMode = summaryM;
+			g_DataBlock.countDownData.state = stopState;
+			break;
+		}
+		case failB:
+		{
+			g_DataBlock.countDownData.isNewState = True;
+			g_DataBlock.countDownData.state = stopState;
+			break;
+		}
+		case workB:
+		{
+			if (g_DataBlock.countDownData.countDone)
+			{
+				g_DataBlock.summaryData.
+			}
+			g_DataBlock.countDownData.isNewState = True;
+			g_DataBlock.countDownData.state = workState;
+			break;
+		}
+		case sBreakB:
+		{
+			g_DataBlock.countDownData.isNewState = True;
+			g_DataBlock.countDownData.state = sBreakState;
+			break;
+		}
+		case lBreakB:
+		{
+			g_DataBlock.countDownData.isNewState = True;
+			g_DataBlock.countDownData.state = lBreakState;
+			break;
+		}
+		case noneB:
+		default:
+		{
+			break;
+		}
+	}
+}
+
+void countDownTaskHdl()
+{
+	if (g_DataBlock.countDownData.isNewState)
+	{
+		g_DataBlock.work.remain = g_DataBlock.work.period;
+		g_DataBlock.sBreak.remain = g_DataBlock.sBreak.period;
+		g_DataBlock.lBreak.remain = g_DataBlock.lBreak.period;
+
+		g_DataBlock.countDownData.mileStone = millis();
+	}
+	else
+	{
+		unsigned long curSecond = (millis() - g_DataBlock.countDownData.mileStone) / 1000;
+   	unsigned long curMin = curSecond / 60;
+		switch (g_DataBlock.countDownData.state)
+		{
+			case workState:
+			{
+				if (curMin <= g_DataBlock.work.period)
+				{
+					g_DataBlock.work.remain = g_DataBlock.work.period - curMin;
+					char string [
+					lcd_buffer_insert(1, 0, "Working", 7, False);
+					lcd_buffer_insert(1, 13, "Working", , False);
+				}
+				else
+				{
+				}
+				break;
+			}
+			case sBreakState:
+			{
+				if (curMin <= g_DataBlock.sBreak.period)
+				{
+					g_DataBlock.sBreak.remain = g_DataBlock.sBreak.period - curMin;
+				}
+				break;
+			}
+			case lBreakState:
+			{
+				if (curMin <= g_DataBlock.sBreak.period)
+				{
+					g_DataBlock.sBreak.remain = g_DataBlock.sBreak.period - curMin;
+				}
+				break;
+			}
+			case stopState:
+			{
+				break;
+			}
+		}
+	}
 }
 
 void setup()
@@ -275,9 +385,14 @@ void setup()
 	}
 	// XXX need to comment about polimophism technique
 	// XXX need to comment about overwrite function technique in print function
+
+	// Xác định Mode khởi động của chương trình
+	g_DataBlock.curMode = countDownM;
+	// Xác định Kiểu 
 }
 
-void loop(){  
+void loop()
+{  
 	// Đây là vòng lặp lớn nhất của chương trình, sau khi khởi động xong, MCU sẽ chỉ thực thi
 	// trong vòng lặp này mà thôi.
 
@@ -286,27 +401,29 @@ void loop(){
 		// Đọc tín hiệu ADC để biết nút nào đã được nhấn
 		eButton button = read_buttons(); 
 
-		// XXX
+		// Xác định mode hiện tại và thực hiện công việc trong mode đó
 		unsigned int modeIndex;
 		for (modeIndex = 0; modeIndex < (sizeof(g_Mode) / sizeof(T_Mode)); i++)
 		{
 			if (g_Mode[modeIndex].mode == g_DataBlock.curMode)
 			{
-				g_Mode[modeIndex].buttonHandler(button);
-				g_Mode[modeIndex].taskHandler();
+				g_Mode[modeIndex].buttonHandler(button); // xử lý công việc dựa theo nút đã nhấn
+				g_Mode[modeIndex].taskHandler();         // xử lý công việc bình thường trong mode
 				break;
 			}
 		}
 		if (modeIndex == (sizeof(g_Mode) / sizeof(T_Mode)))
 		{
-			// Should never come into this case!
+			// Nếu không tìm thấy mode hiện tại trong bảng -> lỗi của chương trình
+			// Chương trình chạy tốt sẽ ko bao giờ nhảy vào đoạn này
 			lcd.setCursor(j,LINE_1);
 			lcd.print("I'm broken!!!");  
 		}
 
 		// XXX should use maxtrix technique to handle instead of create two array
-		lcd_buffer_insert(int colum, int line, char *str, int str length, eNumBlink blink);
+		lcd_buffer_insert(int line, int colum, char *str, int str length, eNumBlink blink);
 
+		//XXX need to break this file into two file. -> to let they understand about global variable
 	}
 
 	// print character to lcd
