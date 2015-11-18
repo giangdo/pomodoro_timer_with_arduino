@@ -300,14 +300,15 @@ void loop(){
 		if (modeIndex == (sizeof(g_Mode) / sizeof(T_Mode)))
 		{
 			// Should never come into this case!
+			lcd.setCursor(j,LINE_1);
+			lcd.print("I'm broken!!!");  
 		}
 
-		// XXX
+		// XXX should use maxtrix technique to handle instead of create two array
+		lcd_buffer_insert(int colum, int line, char *str, int str length, eNumBlink blink);
 
 	}
 
-	// handle button function if there are button
-	// handle for mode (generate data buffer
 	// print character to lcd
    curSecond = (millis() - prevTime) / 1000;
    curMin = curSecond / 60;
