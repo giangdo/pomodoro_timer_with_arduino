@@ -16,7 +16,7 @@
   Giá trị mặc định là:
   - Working: 25 phút
   - Long Break: 15 phút
-  - Short Break: 5 phút
+  - Short Break: 5 phút 
 
   Cách sử dụng:
   + Nhấn Select để chuyển mode: Countdown -> Summary -> Modify -> Countdown
@@ -28,7 +28,7 @@
   + Trong mode Summary: xem số lần làm việc/nghỉ ngắn/nghỉ dài thành công
   - Nhấn nút Fail để thiết lập lại tất cả giá trị các bộ đếm về 0
 
-  + Trong mode Modify:
+  + Trong mode Modify: 
   - Nhấn nút Work, hoặc LBreak, hoặc SBreakWork chỉnh giá trị cho thời gian Làm việc,
   Nghỉ dài, Nghỉ ngắn
 
@@ -87,11 +87,11 @@
 #define LINE_1 1
 #define NUMBER_OF_LINE 2
 // Khai báo một object của lớp LiquidCrystal, đồng thời thông qua constructor của lớp
-// này xác định các chân GPIO trên MCU dùng để điều khiển LCD
-// Thư viện LiquidCrystal viết bằng C++ ở arduino-1.6.6/libraries/LiquidCrystal/src/LiquidCrystal.h
+// này xác định các chân GPIO trên MCU dùng để điều khiển LCD 
+// Thư viện LiquidCrystal viết bằng C++ ở arduino-1.6.6/libraries/LiquidCrystal/src/LiquidCrystal.h 
 LiquidCrystal lcd(LCD_D0, LCD_D1, LCD_D2, LCD_D3, LCD_D4, LCD_D5);
 
-// Kỹ thuật sử dụng enum để tránh sử dụng những con số vô nghĩa trong lập trình
+// Kỹ thuật sử dụng enum để tránh sử dụng những con số vô nghĩa trong lập trình 
 typedef enum button
 {
 	selectB = 0, // Select Button      <=> nút Select ở board lcd shield
@@ -109,7 +109,7 @@ E_Button read_buttons()
 {
 	// MCU đọc giá trị của hiệu điện thế từ chân ADC (Analog Digital Converter)
 	// hàm analogRead() được khai báo trong arduino-1.6.6/hardware/arduino/avr/cores/arduino/wiring_analog.c
-	int adc = analogRead(adcPIN);
+	int adc = analogRead(adcPIN); 
 
 	// Thủ thuật hay: Bằng cách nối các nút nhấn vào một chân ADC của MCU như trong board
 	// LCD shield này ta có thể xác định được trạng thái của nút nhấn thông qua giá trị
@@ -117,20 +117,20 @@ E_Button read_buttons()
 	// mỗi nút nhấn sẽ được kiểm soát bởi một chân MCU.
 
 	// Khi adc là rất lớn ,gần như vô cùng -> ko có nút nào được nhấn
-	if (adc > 1000) return noneB;
+	if (adc > 1000) return noneB; 
 
 	// Nếu dùng board LCD shield version 1.0 thì dùng bảng sau xóa bảng còn lại
 	if (adc < 50)  return lBreakB; //Khi nhấn nút lBreak  giá trị chính xác trả về là 0
-	if (adc < 195) return workB;   //Khi nhấn nút workB   giá trị chính xác trả về là 144
-	if (adc < 380) return sBreakB; //Khi nhấn nút sBreakB giá trị chính xác trả về là 329
-	if (adc < 555) return stopB;   //Khi nhấn nút stopB   giá trị chính xác trả về là 504
-	if (adc < 790) return selectB; //Khi nhấn nút selectB giá trị chính xác trả về là 741
+	if (adc < 195) return workB;   //Khi nhấn nút workB   giá trị chính xác trả về là 144 
+	if (adc < 380) return sBreakB; //Khi nhấn nút sBreakB giá trị chính xác trả về là 329 
+	if (adc < 555) return stopB;   //Khi nhấn nút stopB   giá trị chính xác trả về là 504 
+	if (adc < 790) return selectB; //Khi nhấn nút selectB giá trị chính xác trả về là 741 
 
 	// Nếu dùng board LCD shield version 1.1 thì dùng bảng sau xóa bảng còn lại
-	// if (adc_key_in < 50)   return lBreakB;
-	// if (adc_key_in < 250)  return workB;
-	// if (adc_key_in < 450)  return sBreakB;
-	// if (adc_key_in < 650)  return failB;
+	// if (adc_key_in < 50)   return lBreakB;  
+	// if (adc_key_in < 250)  return workB; 
+	// if (adc_key_in < 450)  return sBreakB; 
+	// if (adc_key_in < 650)  return failB; 
 	// if (adc_key_in < 850)  return selectB;
 
 	return noneB;
@@ -146,15 +146,15 @@ typedef enum state
 {
 	workState   = 0,  //Working state
 	sBreakState = 1,  //Short Break state
-	lBreakState = 2,  //Long Break state
+	lBreakState = 2,  //Long Break state 
 	stopState   = 3,  //Stop state
 	notifyState = 4   // Notify state
 }E_State; // Enum State
 
-typedef struct countDown
+typedef struct countDown 
 {
 	E_State state;
-	E_State prevSucState[17];
+	E_State prevSuccessState[17];
 	unsigned long mileStone; // Thời điểm được lấy lám mốc để tính khoảng thời gian đã trôi qua
 	unsigned long remain; // Thời gian còn lại tính theo đơn miligiây
 }T_CountDown;
@@ -183,96 +183,88 @@ typedef void (*modeHdl) (void* data);
 typedef struct mode
 {
 	E_Mode mode; //Mode
-	buttonHdl buttonHandler; //function pointer that point to button handler function
+	buttonHdl buttonHandler; //function pointer that point to button handler function   	
 	modeHdl taskHandler; //Function pointer that point to normal task handler of this mode
 }T_Mode;
 
 //Interface between mode and main thread
 typedef struct lcdBuffer
 {
-	char origin[NUMBER_OF_LINE][NUMBER_OF_COLUM];
-	E_Bool blink[NUMBER_OF_LINE][NUMBER_OF_COLUM];  //XXX should change to bit technique here
-	char sendOut[NUMBER_OF_LINE][NUMBER_OF_COLUM + 1];
+	char character[2][17]; //
+	char blink[2][17];  //XXX should change to bit technique here
+	char sendOut[2][18];
 }T_LcdBuffer;
-#define LCD_CONTROL_FREQ 20 // 20 Milisecond
-#define BLINK_FREQUENCY 500 // 500 Milisecond
-#define BLINK_DUTY_CYCLE 250 // 250 milisecond
 
 typedef struct dataBlock
 {
-	T_CountDown cntDown;
+	T_CountDown countDownData;
 	T_Count     work;
 	T_Count     sBreak;
 	T_Count     lBreak;
 	E_Mode      curMode;
 	T_LcdBuffer lcdBuf;
-}T_DataBlock g_Data; //Biggest global variable
+}T_DataBlock g_DataBlock;
 
 void lcd_buffer_clean();
-void lcd_buffer_insert(int line, int colum, char *str, E_Bool isBlink);
-void lcd_flush_out();
+void lcd_buffer_insert(int line, int colum, char *str, eNumBlink blink);
 
 void lcd_buffer_clean()
 {
-	memset(&g_Data.lcdBuf, 0, sizeof(g_Data.lcdBuf));
+	memset(&g_DataBlock.lcdBuf, 0, sizeof(g_DataBlock.lcdBuf));
 }
 
-void lcd_buffer_insert(int line, int colum, char *str, E_Bool isBlink)
+void lcd_buffer_insert(int line, int colum, char *str, eNumBlink blink)
 {
 	if ((line < NUMBER_OF_LINE) &&
 		 (colum < NUMBER_OF_COLUM) &&
-		 ((NUMBER_OF_COLUM - colum) > strlen(str)))
+		 ((NUMBER_OF_COLUM - colum) > strlen(str)))                         	
 	{
-		memcpy(&(g_Data.lcdBuf.origin[line][colum]), str, strlen(str));
-		memset(&(g_Data.lcdBuf.blink[line][colum]), isBlink, strlen(str));
-	}
+		memcpy(&(g_DataBlock.lcdBuf.character[line][colum]), str, strlen(str));	
+		memset(&(g_DataBlock.lcdBuf.blink[line][colum]), blink, strlen(str));  	
+	}                                                                      	
 }
 
 void lcd_flush_out()
 {
-	char* p_origin = g_Data.lcdBuf.origin;
-	E_Bool* p_blink = g_Data.lcdBuf.blink;
-	char* p_sendOut = g_Data.lcdBuf.sendOut;
-
-	if ((millis() % LCD_CONTROL_FREQ) == 0)
+	char* p_char = g_DataBlock.lcdBuf.original;
+	char* p_blink = g_DataBlock.lcdBuf.blink;
+	char* p_sendOut = g_DataBlock.lcdBuf.sendOut;
+	// Tạo hiệu ứng nhấp nháy
+	if (millis() % 500MS < 250MS))
 	{
-		// Tạo hiệu ứng nhấp nháy
-		if ((millis() % BLINK_FREQUENCY) < BLINK_DUTY_CYCLE)  
+		// Trong khoảng 250ms đầu tiên của 500ms thì giữ nguyên
+		memcpy(p_sendOut, p_char, sizeof(g_DataBlock.lcdBuf.original));
+	}
+	else
+	{
+		// Trong 250ms sau của 500ms thì hiển thị khoảng trắng
+		// cho những vị trí được đánh dấu là blink 
+		for (unsigned char i = 0; i < sizeof(g_DataBlock.lcdBuf.original), i++)
 		{
-			// Trong khoảng 250ms đầu tiên của 500ms thì giữ nguyên
-			memcpy(p_sendOut, p_origin, sizeof(g_Data.lcdBuf.origin));
-		}
-		else
-		{
-			// Trong 250ms sau của 500ms thì hiển thị khoảng trắng
-			// cho những vị trí được đánh dấu là blink
-			for (unsigned char i = 0; i < sizeof(g_Data.lcdBuf.origin), i++)
-			{
-				if (*(p_blink + i) == TRUE)
-				{
-					*(p_sendOut + i) = ' ';
-				}
-				else
-				{
-					*(p_sendOut + i) = *(p_char + i);
-				}
-			}
-		}
-
-		// bo sung khoang trang de tao thanh chuoi lien tuc
-		for (unsigned char j = 0; j < sizeof(g_Data.lcdBuf.sendOut), j++)
-		{
-			if ((*p_sendOut + j) == 0)
+			if (p_blink == TRUE)
 			{
 				*(p_sendOut + i) = ' ';
 			}
+			else
+			{
+				*(p_sendOut + i) = *(p_char + i);
+			}
 		}
-		g_Data.lcdBuf.sendOut[LINE_0][NUMBER_OF_COLUM] = 0; // add NULL
-		g_Data.lcdBuf.sendOut[LINE_1][NUMBER_OF_COLUM] = 0; // add NULL
-
-		lcd.print(COLUM_0, LINE_0, &g_Data.lcdBuf.sendOut[LINE_0]);
-		lcd.print(COLUM_0, LINE_1, &g_Data.lcdBuf.sendOut[LINE_1]);
 	}
+
+	// bo sung khoang trang
+	for (unsigned char j = 0; j < sizeof(g_DataBlock.lcdBuf.sendOut), j++)
+	{
+		if ((*p_sendOut + j) == 0)
+		{
+			*(p_sendOut + i) = ' ';
+		}
+	}
+	g_DataBlock.lcdBuf.sendOut[LINE_0][NUMBER_OF_COLUM] = 0; // add NULL
+	g_DataBlock.lcdBuf.sendOut[LINE_1][NUMBER_OF_COLUM] = 0; // add NULL
+
+	lcd.print(COLUM_0, LINE_0, &g_DataBlock.lcdBuf.sendOut[LINE_0]);	
+	lcd.print(COLUM_0, LINE_1, &g_DataBlock.lcdBuf.sendOut[LINE_1]);	
 }
 
 void countDownButtonHdl(E_Button button);
@@ -286,7 +278,7 @@ T_Mode g_Mode[] = // global variable mode
 {
 	{countDownM , countDownButtonHdl , countDownTaskHdl},
 	{summaryM   , summaryButtonHdl   , summaryTaskHdl  },
-	{modifyM    , modifyButtonHdl    , modifyTaskHdl   }
+	{modifyM    , modififyButtonHdl  , modifyTaskHdl   }
 }
 
 void insert_state(E_State state)
@@ -294,11 +286,11 @@ void insert_state(E_State state)
 	//Thành viên mới nhất nằm ở đầu mảng, Thành viên cũ nhất nằm ở cuối mảng
 	E_State prev = state;
 	E_State cur;
-	for (unsigned char i = 0; i < sizeof(g_Data.cntDown.prevSucState), i++)
+	for (unsigned char i = 0; i < sizeof(g_DataBlock.prevSuccessState), i++)
 	{
 		// Dịch phải
-		cur = g_Data.cntDown.prevSucState[i];  // Lưu giá trị hiện tại
-		g_Data.cntDown.prevSucState[i] = prev; // Cập nhật giá trị mới
+		cur = g_DataBlock.prevSuccessState[i];  // Lưu giá trị hiện tại
+		g_DataBlock.prevSuccessState[i] = prev; // Cập nhật giá trị mới
 		prev = cur;                             // Chuẩn bị cho lần sau
 	}
 }
@@ -308,24 +300,24 @@ const char* recommended_next_state()
 	// XXX nên lưu thêm thông số thời điểm mà chu kỳ thành công để dễ dàng hơn trong
 	// việc đưa ra lởi khuyên
 	const char *str;
-	if ((g_Data.cntDown.prevSucState[0] == sBreakState) ||
-		 (g_Data.cntDown.prevSucState[0] == lBreakState))
+	if ((g_DataBlock.prevSuccessState[0] == sBreakState) ||
+		 (g_DataBlock.prevSuccessState[0] == lBreakState))
 	{
-		return g_Data.work.str; //Trước đó nghỉ thì bây giờ nên làm
+		return g_DataBlock.work.str; //Trước đó nghỉ thì bây giờ nên làm
 	}
 	else
 	{
-		if ((g_Data.cntDown.prevSucState[1] == sBreakState) &&
-			 (g_Data.cntDown.prevSucState[2] == workState) &&
-			 (g_Data.cntDown.prevSucState[3] == sBreakState) &&
-			 (g_Data.cntDown.prevSucState[4] == workState) &&
-			 (g_Data.cntDown.prevSucState[5] == sBreakState))
+		if ((g_DataBlock.prevSuccessState[1] == sBreakState) &&
+			 (g_DataBlock.prevSuccessState[2] == workState) &&
+			 (g_DataBlock.prevSuccessState[3] == sBreakState) &&
+			 (g_DataBlock.prevSuccessState[4] == workState) &&
+			 (g_DataBlock.prevSuccessState[5] == sBreakState))
 		{
-			return g_Data.lBreak.str;
+			return g_DataBlock.lBreak.str;
 		}
 		else
 		{
-			return g_Data.sBreak.str;
+			return g_DataBlock.sBreak.str;
 		}
 	}
 }
@@ -340,21 +332,21 @@ void countDownButtonHdl(E_Button button)
 	{
 		// Xác định chu kỳ hiện tại có thất bại hay ko?
 		T_Count *pT_Count = NULL;
-		if (g_Data.cntDown.state == workState)
+		if (g_DataBlock.countDownData.state == workState)
 		{
-			pT_Count = &g_Data.work;
+			pT_Count = &g_DataBlock.work;
 		}
-		else if (g_Data.cntDown.state == sBreakState)
+		else if (g_DataBlock.countDownData.state == sBreakState)
 		{
-			pT_Count = &g_Data.sBreak;
+			pT_Count = &g_DataBlock.sBreak;
 		}
-		else if (g_Data.cntDown.state == lBreakState)
+		else if (g_DataBlock.countDownData.state == lBreakState)
 		{
-			pT_Count = &g_Data.lBreak;
+			pT_Count = &g_DataBlock.lBreak;
 		}
 		if (pT_Count != NULL)
 		{
-			if (g_Data.cntDown.remain == 0)
+			if (g_DataBlock.countDownData.remain == 0)
 			{
 				pT_Count->fail++;
 			}
@@ -363,32 +355,32 @@ void countDownButtonHdl(E_Button button)
 		// Xử lý công việc theo chức năng của nút nhấn
 		if (button == selectB)
 		{
-			g_Data.curMode = summaryM;
-			g_Data.cntDown.state = stopState; // Xác định trạng thái khi quay lại mode countdown này
-			g_Data.cntDown.remain = 0;
+			g_DataBlock.curMode = summaryM;
+			g_DataBlock.countDownData.state = stopState; // Xác định trạng thái khi quay lại mode countdown này
+			g_DataBlock.countDownData.remain = 0;
 		}
-		else
+		else 
 		{
-			g_Data.cntDown.mileStone = millis();
+			g_DataBlock.countDownData.mileStone = millis();
 			if (button == stopB)
 			{
-				g_Data.cntDown.state = stopState;
-				g_Data.cntDown.remain = 0;
+				g_DataBlock.countDownData.state = stopState;
+				g_DataBlock.countDownData.remain = 0;
 			}
 			else if (button == workB)
 			{
-				g_Data.cntDown.state = workState;
-				g_Data.cntDown.remain = g_Data.work.period;
+				g_DataBlock.countDownData.state = workState;
+				g_DataBlock.countDownData.remain = g_DataBlock.work.period;
 			}
 			else if (button == sBreak)
 			{
-				g_Data.cntDown.state = sBreakState;
-				g_Data.cntDown.remain = g_Data.sBreak.period;
+				g_DataBlock.countDownData.state = sBreakState;
+				g_DataBlock.countDownData.remain = g_DataBlock.sBreak.period;
 			}
 			else if (button == lBreak)
 			{
-				g_Data.cntDown.state = lBreakState;
-				g_Data.cntDown.remain = g_Data.lBreak.period;
+				g_DataBlock.countDownData.state = lBreakState;
+				g_DataBlock.countDownData.remain = g_DataBlock.lBreak.period;
 			}
 		}
 	}
@@ -398,17 +390,17 @@ void countDownTaskHdl()
 {
 	// Tìm pointer trỏ đến state đếm hiện tại
 	T_Count *pT_Count = NULL;
-	if (g_Data.cntDown.state == workState)
+	if (g_DataBlock.countDownData.state == workState)
 	{
-		pT_Count = &g_Data.work;
+		pT_Count = &g_DataBlock.work;
 	}
-	else if (g_Data.cntDown.state == sBreakState)
+	else if (g_DataBlock.countDownData.state == sBreakState)
 	{
-		pT_Count = &g_Data.sBreak;
+		pT_Count = &g_DataBlock.sBreak;
 	}
-	else if (g_Data.cntDown.state == lBreakState)
+	else if (g_DataBlock.countDownData.state == lBreakState)
 	{
-		pT_Count = &g_Data.lBreak;
+		pT_Count = &g_DataBlock.lBreak;
 	}
 
 	if (pT_Count != NULL) // Kiểm tra xem có đang ở state đếm nào ko ?
@@ -418,17 +410,17 @@ void countDownTaskHdl()
 		// trăm ngàn thiên niên kỉ nữa!
 		// Hàm millis() sẽ trả về cùng giá trị nếu ta gọi liên tục hàm này trong khoảng thời gian nhỏ hơn 1 mili giây
 
-		if (g_Data.cntDown.remain != 0)
+		if (g_DataBlock.countDownData.remain != 0)
 		{
 			// Số miligiây đã trải qua từ lúc bấm nút đếm
-			unsigned long msPassed = millis() - g_Data.cntDown.mileStone;
-			if (msPassed <= pT_Count.period)
+			unsigned long msPassed = millis() - g_DataBlock.countDownData.mileStone;
+			if (msPassed <= pT_Count.period) 
 			{
-				g_Data.cntDown.remain = pT_Count.period - msPassed;
+				g_DataBlock.countDownData.remain = pT_Count.period - msPassed;
 				unsigned int remainMin =
-					(g_Data.cntDown.remain / SECOND_TO_MILISECONDS) / MINUTE_TO_SECONDS;
+					(g_DataBlock.countDownData.remain / SECOND_TO_MILISECONDS) / MINUTE_TO_SECONDS;
 				unsigned int remainSec =
-					(g_Data.cntDown.remain / SECOND_TO_MILISECONDS) % MINUTE_TO_SECONDS;
+					(g_DataBlock.countDownData.remain / SECOND_TO_MILISECONDS) % MINUTE_TO_SECONDS;
 
 				lcd_buffer_clean();
 				char string[17];
@@ -436,14 +428,14 @@ void countDownTaskHdl()
 				lcd_buffer_insert(LINE_1, 0, string, False);
 			}
 
-			if (g_Data.cntDown.remain == 0)
+			if (g_DataBlock.countDownData.remain == 0) 
 			{
 				// Ngay tại thời điểm thời gian về bằng 0, ta phải đếm lên số lần thành công ngay lập tức
 				// và xử lý sao cho đoạn lệnh này chỉ được chạy một lần duy nhất trong suốt chu kỳ
 				pT_Count->success++;
 
 				// Cập nhật dữ liệu cho bảng chứa các trạng thái trước đó
-				insert_state(g_Data.cntDown.state);
+				insert_state(g_DataBlock.countDownData.state);
 			}
 		}
 		else
@@ -467,22 +459,22 @@ void summaryButtonHdl(E_Button button)
 	{
 		case selectB:
 			{
-				g_Data.curMode = modifyM;
+				g_DataBlock.curMode = modifyM;
 				break;
 			}
 		case workB:
 			{
-				pT_Count = &g_Data.work;
+				pT_Count = &g_DataBlock.work;
 				break;
 			}
 		case sBreakB:
 			{
-				pT_Count = &g_Data.sBreak;
+				pT_Count = &g_DataBlock.sBreak;
 				break;
 			}
 		case lBreakB:
 			{
-				pT_Count = &g_Data.sBreak;
+				pT_Count = &g_DataBlock.sBreak;
 				break;
 			}
 		case Stop:
@@ -506,18 +498,18 @@ void summaryTaskHdl()
 	lcd_buffer_clean(); //Xoá tất bộ đệm lcd
 
 	lcd_buffer_insert(LINE_0, 0, "Wo", False);
-	snprintf(string, sizeof(string), "%d/%d", g_Data.work.success,
-				g_Data.work.fail+ g_Data.work.success);
+	snprintf(string, sizeof(string), "%d/%d", g_DataBlock.work.success,
+				g_DataBlock.work.fail+ g_DataBlock.work.success);
 	lcd_buffer_insert(LINE_1, 0, string, False);
 
 	lcd_buffer_insert(LINE_0, 7, "Sb", False);
-	snprintf(string, sizeof(string), "%d/%d", g_Data.sBreak.success,
-				g_Data.sBreak.fail+ g_Data.sBreak.success);
+	snprintf(string, sizeof(string), "%d/%d", g_DataBlock.sBreak.success,
+				g_DataBlock.sBreak.fail+ g_DataBlock.sBreak.success);
 	lcd_buffer_insert(LINE_1, 7, string, False);
 
 	lcd_buffer_insert(LINE_0, 14, "Lb", False);
-	snprintf(string, sizeof(string), "%d/%d", g_Data.lBreak.success,
-				g_Data.lBreak.fail+ g_Data.lBreak.success);
+	snprintf(string, sizeof(string), "%d/%d", g_DataBlock.lBreak.success,
+				g_DataBlock.lBreak.fail+ g_DataBlock.lBreak.success);
 	lcd_buffer_insert(LINE_1, 13, string, False);
 }
 
@@ -528,22 +520,22 @@ void modifyButtonHdl(E_Button button)
 	{
 		case selectB:
 			{
-				g_Data.curMode = modifyM;
+				g_DataBlock.curMode = modifyM;
 				break;
 			}
 		case workB:
 			{
-				pT_Count = &g_Data.work;
+				pT_Count = &g_DataBlock.work;
 				break;
 			}
 		case sBreakB:
 			{
-				pT_Count = &g_Data.sBreak;
+				pT_Count = &g_DataBlock.sBreak;
 				break;
 			}
 		case lBreakB:
 			{
-				pT_Count = &g_Data.sBreak;
+				pT_Count = &g_DataBlock.sBreak;
 				break;
 			}
 		case Stop:
@@ -570,15 +562,15 @@ void modifyTaskHdl()
 	lcd_buffer_clean(); //Xoá tất bộ đệm lcd
 
 	lcd_buffer_insert(LINE_0, 0, "Wo", False);
-	snprintf(string, sizeof(string), "%d", g_Data.work.period/MINUTE_TO_MILISECOND);
+	snprintf(string, sizeof(string), "%d", g_DataBlock.work.period/MINUTE_TO_MILISECOND);
 	lcd_buffer_insert(LINE_1, 0, string, False);
 
 	lcd_buffer_insert(LINE_0, 7, "Sb", False);
-	snprintf(string, sizeof(string), "%d", g_Data.sBreak.period/MINUTE_TO_MILISECOND);
+	snprintf(string, sizeof(string), "%d", g_DataBlock.sBreak.period/MINUTE_TO_MILISECOND);
 	lcd_buffer_insert(LINE_1, 7, string, False);
 
 	lcd_buffer_insert(LINE_0, 14, "Lb", False);
-	snprintf(string, sizeof(string), "%d", g_Data.lBreak.period/MINUTE_TO_MILISECOND);
+	snprintf(string, sizeof(string), "%d", g_DataBlock.lBreak.period/MINUTE_TO_MILISECOND);
 	lcd_buffer_insert(LINE_1, 14, string, False);
 }
 
@@ -597,9 +589,9 @@ void setup()
 	// để in dòng chữ "Wellcome"
 	// Kỹ thuật inheritance trong C++ được sử dụng, đối tượng của lớp LiquidCrystal có thể gọi hàm của lớp Print
 	// vì lớp LiquidCrystal thừa kế theo kiểu public lớp Print
-	lcd.print("Welcome");
+	lcd.print("Welcome");    
 
-	// In số 0 rồi 1 rồi 2 ...
+	// In số 0 rồi 1 rồi 2 ... 
 	for (int i = 0; i < 3, i++)
 	{
 		lcd.setCursor(COLUM_0,LINE_1);
@@ -625,35 +617,34 @@ void setup()
 	for (int j = 0; j < sizeof(string); j++)
 	{
 		lcd.setCursor(j,LINE_1); // XXX need to comment here
-		lcd.print(string[j]);
+		lcd.print(string[j]);  
 	}
 	// XXX need to comment about polimophism technique
 	// XXX need to comment about overwrite function technique in print function
 
 	// Xác định Mode khởi động của chương trình
-	memset(0, &g_Data, sizeof(g_Data));
-	g_Data.curMode = countDownM;
-	// Xác định Kiểu
-	g_Data.cntDown.state = stopState;
-	// Xac dinh string
+	memset(0, &g_DataBlock, sizeof(g_DataBlock));
+	g_DataBlock.curMode = countDownM;
+	// Xác định Kiểu 
+	g_DataBlock.countDownData.state = stopState;
 }
 
 
 void loop()
-{
+{  
 	// Đây là vòng lặp lớn nhất của chương trình, sau khi khởi động xong, MCU sẽ chỉ thực thi
 	// trong vòng lặp này mà thôi.
 
 	while (1)
 	{
 		// Đọc tín hiệu ADC để biết nút nào đã được nhấn
-		eButton button = read_buttons();
+		eButton button = read_buttons(); 
 
 		// Xác định mode hiện tại và thực hiện công việc trong mode đó
 		unsigned int modeIndex;
 		for (modeIndex = 0; modeIndex < (sizeof(g_Mode) / sizeof(T_Mode)); i++)
 		{
-			if (g_Mode[modeIndex].mode == g_Data.curMode)
+			if (g_Mode[modeIndex].mode == g_DataBlock.curMode)
 			{
 				g_Mode[modeIndex].buttonHandler(button); // xử lý công việc dựa theo nút đã nhấn
 				g_Mode[modeIndex].taskHandler();         // xử lý công việc bình thường trong mode
@@ -665,7 +656,7 @@ void loop()
 			// Nếu không tìm thấy mode hiện tại trong bảng -> lỗi của chương trình
 			// Chương trình chạy tốt sẽ ko bao giờ nhảy vào đoạn này
 			lcd.setCursor(j,LINE_1);
-			lcd.print("I'm broken!!!");
+			lcd.print("I'm broken!!!");  
 		}
 
 
