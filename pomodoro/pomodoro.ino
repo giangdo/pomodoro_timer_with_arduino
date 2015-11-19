@@ -1,77 +1,77 @@
 /*************************************************************************************
-Giang Do (Đỗ Trường Giang), November 2015
- 
-Đây là chương trình Pomodoro Timer dùng hai bo mạch lcd-button shield và Ardunio U3
+  Giang Do (Đỗ Trường Giang), November 2015
 
-Chương trình gồm có 3 mode chính:
-	+ Countdown(đếm lùi): đây là mode chính của chương trình, cho phép thiết lập thời
-		gian đếm lùi theo 3 kiểu và phát tín hiệu cảnh báo khi thời gian lùi về 0.
-			- Working : Làm việc
-			- Long Break : Nghỉ dài
-			- Short Break : Nghỉ ngắn
-	+ Summary(Tổng hợp): đây là mode dùng để hiển thị kết quả số lẩn thực hiện thành công của
-		từng kiểu đếm lùi. từ khi đồng hồ pomodoro này được khởi động chạy.
+  Đây là chương trình Pomodoro Timer dùng hai bo mạch lcd-button shield và Ardunio U3
 
-	+ Modify(Điều chỉnh): đây là mode dùng để điểu chỉnh khoảng thời gian cho mỗi kiểu đếm lùi.
-		Giá trị mặc định là:
-		- Working: 25 phút
-		- Long Break: 15 phút
-		- Short Break: 5 phút 
+  Chương trình gồm có 3 mode chính:
+  + Countdown(đếm lùi): đây là mode chính của chương trình, cho phép thiết lập thời
+  gian đếm lùi theo 3 kiểu và phát tín hiệu cảnh báo khi thời gian lùi về 0.
+  - Working : Làm việc
+  - Long Break : Nghỉ dài
+  - Short Break : Nghỉ ngắn
+  + Summary(Tổng hợp): đây là mode dùng để hiển thị kết quả số lẩn thực hiện thành công của
+  từng kiểu đếm lùi. từ khi đồng hồ pomodoro này được khởi động chạy.
 
-Cách sử dụng:
-	+ Nhấn Select để chuyển mode: Countdown -> Summary -> Modify -> Countdown
-	+ Trong mode Countdown:
-		- Để bắt đầu đếm lùi Nhấn nút Work, hoặc LBreak, hoặc SBreak để bắt đầu đếm lùi
-		   theo kiểu Làm Việc, Nghỉ dài, nghỉ ngắn.
-		- Nhấn nút Fail để xác nhận chu kỳ đang thực hiện cũng như vừa thực hiện xong ko thành công.
+  + Modify(Điều chỉnh): đây là mode dùng để điểu chỉnh khoảng thời gian cho mỗi kiểu đếm lùi.
+  Giá trị mặc định là:
+  - Working: 25 phút
+  - Long Break: 15 phút
+  - Short Break: 5 phút 
 
-	+ Trong mode Summary: xem số lần làm việc/nghỉ ngắn/nghỉ dài thành công
-		- Nhấn nút Fail để thiết lập lại tất cả giá trị các bộ đếm về 0
+  Cách sử dụng:
+  + Nhấn Select để chuyển mode: Countdown -> Summary -> Modify -> Countdown
+  + Trong mode Countdown:
+  - Để bắt đầu đếm lùi Nhấn nút Work, hoặc LBreak, hoặc SBreak để bắt đầu đếm lùi
+  theo kiểu Làm Việc, Nghỉ dài, nghỉ ngắn.
+  - Nhấn nút Fail để xác nhận chu kỳ đang thực hiện cũng như vừa thực hiện xong ko thành công.
 
-	+ Trong mode Modify: 
-		- Nhấn nút Work, hoặc LBreak, hoặc SBreakWork chỉnh giá trị cho thời gian Làm việc,
-		  Nghỉ dài, Nghỉ ngắn
+  + Trong mode Summary: xem số lần làm việc/nghỉ ngắn/nghỉ dài thành công
+  - Nhấn nút Fail để thiết lập lại tất cả giá trị các bộ đếm về 0
 
-Thế nào là một chu kỳ thành công ?
-	+ Một chu kì chỉ được xác định là thành công chỉ khi đồng hồ đếm lùi đã về 0
-	  và người dùng ko nhấn nút Fail sau đó.
+  + Trong mode Modify: 
+  - Nhấn nút Work, hoặc LBreak, hoặc SBreakWork chỉnh giá trị cho thời gian Làm việc,
+  Nghỉ dài, Nghỉ ngắn
 
-Thế nào là một chu kỳ ko thành công ?
-	+ Trong lúc đang đếm lùi: Nhấn bất kỳ một nút nào đó
-	+ Khi đã kết thúc: Nhấn nút Fail.
-			
-* Định hướng lập trình (dành cho các bạn mới làm quen với lập trình nhúng)
-	+ Cần phải giải quyết bài toán MCU làm nhiều công việc gần như cùng lúc (lập trình song song):
-		- MCU phải điều khiển chip LCD driver để hiển thị ký tự trên LCD
-		- MCU phải đọc giá trị ADC để biết nút nhấn nào được nhấn
-		- MCU phải tăng giá trị timer để làm bộ đếm lùi
-		- MCU phải tính toán để quyết định hiển thị cái gì ra màn hình.
+  Thế nào là một chu kỳ thành công ?
+  + Một chu kì chỉ được xác định là thành công chỉ khi đồng hồ đếm lùi đã về 0
+  và người dùng ko nhấn nút Fail sau đó.
 
-		-> Hướng giải quyết:
-		 	. Các công việc tất nhiên sẽ được thực hiện 1 cách tuần tự. (vì ko có nhiều core trong MCU)
-			. Các công việc phải được chia rất nhỏ (thời gian thực hiện rất ngắn, tính bằng micro giấy)
-		 	. Ko thể để một công việc chiếm quá nhiều thời gian xử lý khiến cho tất cả các chức năng
-			  khác ko thể thực thi.
-			  Ví dụ: Chắc chắn là khi MCU điều khiển LCD, MCU sẽ ko thể nhận biết được nút nhấn.
-			  			Vậy nếu ta cách ta lập trình khiến cho MCU tốn nhiều thời gian cho điều khiển LCD,
-						MCU sẽ hầu như ko nhận được tín hiệu nhấn nút được do lúc ta nhấn nút
-						thì MCU đang bận điều khiển LCD rồi.
+  Thế nào là một chu kỳ ko thành công ?
+  + Trong lúc đang đếm lùi: Nhấn bất kỳ một nút nào đó
+  + Khi đã kết thúc: Nhấn nút Fail.
 
-	+ Cần phải giải quyết bài toán máy trạng thái:
-		- Chỉ cần nhấn một nút Select thì có thể chuyển qua lần lượt 3 mode, tức là chuyển trạng
-		  thái chỉ thông qua một nút nhấn chứ ko phải là mỗi nút nhấn một trạng thái.
+ * Định hướng lập trình (dành cho các bạn mới làm quen với lập trình nhúng)
+ + Cần phải giải quyết bài toán MCU làm nhiều công việc gần như cùng lúc (lập trình song song):
+ - MCU phải điều khiển chip LCD driver để hiển thị ký tự trên LCD
+ - MCU phải đọc giá trị ADC để biết nút nhấn nào được nhấn
+ - MCU phải tăng giá trị timer để làm bộ đếm lùi
+ - MCU phải tính toán để quyết định hiển thị cái gì ra màn hình.
 
-		- Ngoài ra ở mỗi mode, nút nhấn cũng có chức năng khác nhau.
+ -> Hướng giải quyết:
+ . Các công việc tất nhiên sẽ được thực hiện 1 cách tuần tự. (vì ko có nhiều core trong MCU)
+ . Các công việc phải được chia rất nhỏ (thời gian thực hiện rất ngắn, tính bằng micro giấy)
+ . Ko thể để một công việc chiếm quá nhiều thời gian xử lý khiến cho tất cả các chức năng
+ khác ko thể thực thi.
+ Ví dụ: Chắc chắn là khi MCU điều khiển LCD, MCU sẽ ko thể nhận biết được nút nhấn.
+ Vậy nếu ta cách ta lập trình khiến cho MCU tốn nhiều thời gian cho điều khiển LCD,
+ MCU sẽ hầu như ko nhận được tín hiệu nhấn nút được do lúc ta nhấn nút
+ thì MCU đang bận điều khiển LCD rồi.
 
-		-> Hướng giải quyết:
-			. Dùng bảng để thể hiện máy trạng thái.
-			. Dùng con trỏ hàm để thể hiện chức năng của mỗi nút nhấn.
+ + Cần phải giải quyết bài toán máy trạng thái:
+ - Chỉ cần nhấn một nút Select thì có thể chuyển qua lần lượt 3 mode, tức là chuyển trạng
+ thái chỉ thông qua một nút nhấn chứ ko phải là mỗi nút nhấn một trạng thái.
 
-**************************************************************************************/
- 
+ - Ngoài ra ở mỗi mode, nút nhấn cũng có chức năng khác nhau.
+
+ -> Hướng giải quyết:
+ . Dùng bảng để thể hiện máy trạng thái.
+ . Dùng con trỏ hàm để thể hiện chức năng của mỗi nút nhấn.
+
+ **************************************************************************************/
+
 /* Khai báo sử dụng thư viện điều khiển LCD */
 #include <LiquidCrystal.h>
- 
+
 // Kỹ thuật sử dụng macro để tránh sử dụng những con số vô nghĩa trong lập trình
 // XXX please check this again
 #define LCD_D0 8  //GPIO8 của MCU nối với chân LCD D0
@@ -99,40 +99,41 @@ typedef enum button
 	workB   = 2, // Work Button        <=> nút Up     ở board lcd shield
 	sBreakB = 3, // Short Break Button <=> nút Down   ở board lcd shield
 	lBreakB = 4, // Long Break Button  <=> nút Right  ở board lcd shield
-   noneB	  = 5  // Không có nút nào được nhấn
+	noneB	  = 5  // Không có nút nào được nhấn
 }E_Button; //Enum Button
 
 #define adcPIN 0 //Chần GPIO 0 của MCU được nối với bộ nút nhấn của board LCD shield
 
 // Hàm này dùng để xác định nút đã được nhấn trên board lcd shield
-E_Button read_buttons(){
+E_Button read_buttons()
+{
 	// MCU đọc giá trị của hiệu điện thế từ chân ADC (Analog Digital Converter)
 	// hàm analogRead() được khai báo trong arduino-1.6.6/hardware/arduino/avr/cores/arduino/wiring_analog.c
-    int adc = analogRead(adcPIN); 
+	int adc = analogRead(adcPIN); 
 
 	// Thủ thuật hay: Bằng cách nối các nút nhấn vào một chân ADC của MCU như trong board
 	// LCD shield này ta có thể xác định được trạng thái của nút nhấn thông qua giá trị
 	// hiệu điện thế của một chân MCU. -> Tiết kiệm được chân MCU vì cách thông thường là
 	// mỗi nút nhấn sẽ được kiểm soát bởi một chân MCU.
-		 
- 	 // Khi adc là rất lớn ,gần như vô cùng -> ko có nút nào được nhấn
-    if (adc > 1000) return noneB; 
- 
-	 // Nếu dùng board LCD shield version 1.0 thì dùng bảng sau xóa bảng còn lại
-    if (adc < 50)  return lBreakB; //Khi nhấn nút lBreak  giá trị chính xác trả về là 0
-    if (adc < 195) return workB;   //Khi nhấn nút workB   giá trị chính xác trả về là 144 
-    if (adc < 380) return sBreakB; //Khi nhấn nút sBreakB giá trị chính xác trả về là 329 
-    if (adc < 555) return stopB;   //Khi nhấn nút stopB   giá trị chính xác trả về là 504 
-    if (adc < 790) return selectB; //Khi nhấn nút selectB giá trị chính xác trả về là 741 
- 
-	 // Nếu dùng board LCD shield version 1.1 thì dùng bảng sau xóa bảng còn lại
-    // if (adc_key_in < 50)   return lBreakB;  
-    // if (adc_key_in < 250)  return workB; 
-    // if (adc_key_in < 450)  return sBreakB; 
-    // if (adc_key_in < 650)  return failB; 
-    // if (adc_key_in < 850)  return selectB;
 
-    return noneB;
+	// Khi adc là rất lớn ,gần như vô cùng -> ko có nút nào được nhấn
+	if (adc > 1000) return noneB; 
+
+	// Nếu dùng board LCD shield version 1.0 thì dùng bảng sau xóa bảng còn lại
+	if (adc < 50)  return lBreakB; //Khi nhấn nút lBreak  giá trị chính xác trả về là 0
+	if (adc < 195) return workB;   //Khi nhấn nút workB   giá trị chính xác trả về là 144 
+	if (adc < 380) return sBreakB; //Khi nhấn nút sBreakB giá trị chính xác trả về là 329 
+	if (adc < 555) return stopB;   //Khi nhấn nút stopB   giá trị chính xác trả về là 504 
+	if (adc < 790) return selectB; //Khi nhấn nút selectB giá trị chính xác trả về là 741 
+
+	// Nếu dùng board LCD shield version 1.1 thì dùng bảng sau xóa bảng còn lại
+	// if (adc_key_in < 50)   return lBreakB;  
+	// if (adc_key_in < 250)  return workB; 
+	// if (adc_key_in < 450)  return sBreakB; 
+	// if (adc_key_in < 650)  return failB; 
+	// if (adc_key_in < 850)  return selectB;
+
+	return noneB;
 }
 
 typedef enum bool
@@ -143,11 +144,11 @@ typedef enum bool
 
 typedef enum state
 {
-  workState   = 0,  //Working state
-  sBreakState = 1,  //Short Break state
-  lBreakState = 2,  //Long Break state 
-  stopState   = 3,  //Stop state
-  notifyState = 4   // Notify state
+	workState   = 0,  //Working state
+	sBreakState = 1,  //Short Break state
+	lBreakState = 2,  //Long Break state 
+	stopState   = 3,  //Stop state
+	notifyState = 4   // Notify state
 }E_State; // Enum State
 
 typedef struct countDown 
@@ -172,8 +173,8 @@ typedef enum mode
 {
 	countDownM = 0, // Countdown Mode
 	summaryM   = 1, // Summary Mode
-   modifyM    = 2, // Modify Mode
-   noneM      = 3  // None Mode, this is use as polar
+	modifyM    = 2, // Modify Mode
+	noneM      = 3  // None Mode, this is use as polar
 }E_Mode; // Enum mode
 
 typedef void (*buttonHdl) (eButton button,void *data);
@@ -191,8 +192,8 @@ typedef struct lcdBuffer
 {
 	char character[2][17]; //
 	char blink[2][17];  //XXX should change to bit technique here
+	char sendOut[2][18];
 }T_LcdBuffer;
-
 
 typedef struct dataBlock
 {
@@ -200,7 +201,7 @@ typedef struct dataBlock
 	T_Count     work;
 	T_Count     sBreak;
 	T_Count     lBreak;
-   E_Mode      curMode;
+	E_Mode      curMode;
 	T_LcdBuffer lcdBuf;
 }T_DataBlock g_DataBlock;
 
@@ -209,18 +210,61 @@ void lcd_buffer_insert(int line, int colum, char *str, eNumBlink blink);
 
 void lcd_buffer_clean()
 {
-	memset(&g_DataBlock.lcdBuf, 0, sizeof(g_DataBlock.lcdBuf);
+	memset(&g_DataBlock.lcdBuf, 0, sizeof(g_DataBlock.lcdBuf));
 }
 
 void lcd_buffer_insert(int line, int colum, char *str, eNumBlink blink)
 {
 	if ((line < NUMBER_OF_LINE) &&
 		 (colum < NUMBER_OF_COLUM) &&
-		 ((NUMBER_OF_COLUM - colum) > strlen(str)))
+		 ((NUMBER_OF_COLUM - colum) > strlen(str)))                         	
 	{
-	memcpy(&(g_DataBlock.lcdBuf.character[line][colum]), str, strlen(str));
-	memset(&(g_DataBlock.lcdBuf.blink[line][colum]), blink, strlen(str));
+		memcpy(&(g_DataBlock.lcdBuf.character[line][colum]), str, strlen(str));	
+		memset(&(g_DataBlock.lcdBuf.blink[line][colum]), blink, strlen(str));  	
+	}                                                                      	
+}
+
+void lcd_flush_out()
+{
+	char* p_char = g_DataBlock.lcdBuf.original;
+	char* p_blink = g_DataBlock.lcdBuf.blink;
+	char* p_sendOut = g_DataBlock.lcdBuf.sendOut;
+	// Tạo hiệu ứng nhấp nháy
+	if (millis() % 500MS < 250MS))
+	{
+		// Trong khoảng 250ms đầu tiên của 500ms thì giữ nguyên
+		memcpy(p_sendOut, p_char, sizeof(g_DataBlock.lcdBuf.original));
 	}
+	else
+	{
+		// Trong 250ms sau của 500ms thì hiển thị khoảng trắng
+		// cho những vị trí được đánh dấu là blink 
+		for (unsigned char i = 0; i < sizeof(g_DataBlock.lcdBuf.original), i++)
+		{
+			if (p_blink == TRUE)
+			{
+				*(p_sendOut + i) = ' ';
+			}
+			else
+			{
+				*(p_sendOut + i) = *(p_char + i);
+			}
+		}
+	}
+
+	// bo sung khoang trang
+	for (unsigned char j = 0; j < sizeof(g_DataBlock.lcdBuf.sendOut), j++)
+	{
+		if ((*p_sendOut + j) == 0)
+		{
+			*(p_sendOut + i) = ' ';
+		}
+	}
+	g_DataBlock.lcdBuf.sendOut[LINE_0][NUMBER_OF_COLUM] = 0; // add NULL
+	g_DataBlock.lcdBuf.sendOut[LINE_1][NUMBER_OF_COLUM] = 0; // add NULL
+
+	lcd.print(COLUM_0, LINE_0, &g_DataBlock.lcdBuf.sendOut[LINE_0]);	
+	lcd.print(COLUM_0, LINE_1, &g_DataBlock.lcdBuf.sendOut[LINE_1]);	
 }
 
 void countDownButtonHdl(E_Button button);
@@ -257,7 +301,7 @@ const char* recommended_next_state()
 	// việc đưa ra lởi khuyên
 	const char *str;
 	if ((g_DataBlock.prevSuccessState[0] == sBreakState) ||
-	    (g_DataBlock.prevSuccessState[0] == lBreakState))
+		 (g_DataBlock.prevSuccessState[0] == lBreakState))
 	{
 		return g_DataBlock.work.str; //Trước đó nghỉ thì bây giờ nên làm
 	}
@@ -414,25 +458,25 @@ void summaryButtonHdl(E_Button button)
 	switch (button)
 	{
 		case selectB:
-		{
-			g_DataBlock.curMode = modifyM;
-			break;
-		}
+			{
+				g_DataBlock.curMode = modifyM;
+				break;
+			}
 		case workB:
-		{
-			pT_Count = &g_DataBlock.work;
-			break;
-		}
+			{
+				pT_Count = &g_DataBlock.work;
+				break;
+			}
 		case sBreakB:
-		{
-			pT_Count = &g_DataBlock.sBreak;
-			break;
-		}
+			{
+				pT_Count = &g_DataBlock.sBreak;
+				break;
+			}
 		case lBreakB:
-		{
-			pT_Count = &g_DataBlock.sBreak;
-			break;
-		}
+			{
+				pT_Count = &g_DataBlock.sBreak;
+				break;
+			}
 		case Stop:
 		case default:
 			{
@@ -455,17 +499,17 @@ void summaryTaskHdl()
 
 	lcd_buffer_insert(LINE_0, 0, "Wo", False);
 	snprintf(string, sizeof(string), "%d/%d", g_DataBlock.work.success,
-	         g_DataBlock.work.fail+ g_DataBlock.work.success);
+				g_DataBlock.work.fail+ g_DataBlock.work.success);
 	lcd_buffer_insert(LINE_1, 0, string, False);
 
 	lcd_buffer_insert(LINE_0, 7, "Sb", False);
 	snprintf(string, sizeof(string), "%d/%d", g_DataBlock.sBreak.success,
-	         g_DataBlock.sBreak.fail+ g_DataBlock.sBreak.success);
+				g_DataBlock.sBreak.fail+ g_DataBlock.sBreak.success);
 	lcd_buffer_insert(LINE_1, 7, string, False);
 
 	lcd_buffer_insert(LINE_0, 14, "Lb", False);
 	snprintf(string, sizeof(string), "%d/%d", g_DataBlock.lBreak.success,
-	         g_DataBlock.lBreak.fail+ g_DataBlock.lBreak.success);
+				g_DataBlock.lBreak.fail+ g_DataBlock.lBreak.success);
 	lcd_buffer_insert(LINE_1, 13, string, False);
 }
 
@@ -475,25 +519,25 @@ void modifyButtonHdl(E_Button button)
 	switch (button)
 	{
 		case selectB:
-		{
-			g_DataBlock.curMode = modifyM;
-			break;
-		}
+			{
+				g_DataBlock.curMode = modifyM;
+				break;
+			}
 		case workB:
-		{
-			pT_Count = &g_DataBlock.work;
-			break;
-		}
+			{
+				pT_Count = &g_DataBlock.work;
+				break;
+			}
 		case sBreakB:
-		{
-			pT_Count = &g_DataBlock.sBreak;
-			break;
-		}
+			{
+				pT_Count = &g_DataBlock.sBreak;
+				break;
+			}
 		case lBreakB:
-		{
-			pT_Count = &g_DataBlock.sBreak;
-			break;
-		}
+			{
+				pT_Count = &g_DataBlock.sBreak;
+				break;
+			}
 		case Stop:
 		case default:
 			{
@@ -619,5 +663,6 @@ void loop()
 		//XXX need to break this file into two file. -> to let they understand about global variable
 	}
 
-	// print character to lcd
+	//In ký tự trong buffer ra màn hình (gửi lcd buffer từ MCU đến LCD driver chip
+	lcd_flush_out();
 }
