@@ -224,95 +224,45 @@ T_Mode g_Mode[] = // global variable mode
 	{modifyM    , modififyButtonHdl  , modifyTaskHdl   }
 }
 
+
 void summaryButtonHdl(E_Button button)
 {
-	T_Count *pT_Count = NULL;
 	switch (button)
 	{
 		case selectB:
-		{
-			g_DataBlock.curMode = modifyM;
-			break;
-		}
+			{
+				g_DataBlock.curMode = modifyM;
+				break;
+			}
 		case workB:
-		{
-			pT_Count = &g_DataBlock.work;
-			break;
-		}
+			{
+				g_DataBlock.work.success = 0;
+				g_DataBlock.work.fail = 0;
+				break;
+			}
 		case sBreakB:
-		{
-			pT_Count = &g_DataBlock.sBreak;
-			break;
-		}
+			{
+				g_DataBlock.sBreak.success = 0;
+				g_DataBlock.sBreak.fail = 0;
+				break;
+			}
 		case lBreakB:
-		{
-			pT_Count = &g_DataBlock.sBreak;
-			break;
-		}
+			{
+				g_DataBlock.lBreak.success = 0;
+				g_DataBlock.lBreak.fail = 0;
+				break;
+			}
 		case Stop:
 		case default:
 			{
 				break;
 			}
-	}
-	if (pT_Count != NULL)
-	{
-		pT_Count.success = 0;
-		pT_Count.fail = 0;
 	}
 }
 
 void summaryTaskHdl()
 {
-	// Print counter
 }
-
-void modifyButtonHdl(E_Button button)
-{
-	T_Count *pT_Count = NULL;
-	switch (button)
-	{
-		case selectB:
-		{
-			g_DataBlock.curMode = modifyM;
-			break;
-		}
-		case workB:
-		{
-			pT_Count = &g_DataBlock.work;
-			break;
-		}
-		case sBreakB:
-		{
-			pT_Count = &g_DataBlock.sBreak;
-			break;
-		}
-		case lBreakB:
-		{
-			pT_Count = &g_DataBlock.sBreak;
-			break;
-		}
-		case Stop:
-		case default:
-			{
-				break;
-			}
-	}
-	if (pT_Count != NULL)
-	{
-		pT_Count.period--;
-		if (pT_Count.period == 1)
-		{
-			pT_Count.period = MAX_PERIOD_MINUTE;
-		}
-	}
-}
-
-void modifyTaskHdl()
-{
-	// print period 
-}
-
 void countDownButtonHdl(E_Button button)
 {
 	if (button == noneB)
@@ -483,9 +433,6 @@ void setup()
 	g_DataBlock.countDownData.state = stopState;
 }
 
-		// XXX should use maxtrix technique to handle instead of create two array
-		lcd_buffer_insert(int line, int colum, char *str, int str length, eNumBlink blink);
-
 void loop()
 {  
 	// Đây là vòng lặp lớn nhất của chương trình, sau khi khởi động xong, MCU sẽ chỉ thực thi
@@ -515,9 +462,104 @@ void loop()
 			lcd.print("I'm broken!!!");  
 		}
 
+		// XXX should use maxtrix technique to handle instead of create two array
+		lcd_buffer_insert(int line, int colum, char *str, int str length, eNumBlink blink);
 
 		//XXX need to break this file into two file. -> to let they understand about global variable
 	}
 
 	// print character to lcd
+   curSecond = (millis() - prevTime) / 1000;
+   curMin = curSecond / 60;
+   switch (status)
+   {
+    case Wo:
+    {
+      lcd.setCursor(0,1);             // move to the begining of the second line
+      lcd.print("Work ");
+      if (curMin < 25)
+        resMin = 25 - curMin;
+      else
+        status = St;
+        
+      break;
+    }
+    case Sb:
+    {
+      lcd.setCursor(0,1);             // move to the begining of the second line
+      lcd.print("SBreak ");
+      if (curMin < 5)
+        resMin = 5 - curMin;
+      else
+        status = St;
+      break;
+    }    
+    case Lb:
+    {
+      lcd.setCursor(0,1);             // move to the begining of the second line
+      lcd.print("LBreak ");
+      if (curMin < 15)
+        resMin = 15 - curMin;
+      else
+        status = St;
+      break;
+    }    
+    case St:
+    {
+      if ((millis() % 500) > 250)
+      {
+      lcd.setCursor(0,1);             // move to the begining of the second line
+      lcd.print("Please Stop Now");
+      }
+      else
+      {
+        lcd.setCursor(0,1);             // move to the begining of the second line
+      lcd.print("               ");
+      }
+      break;
+    }    
+   }
+
+   if (status != St)
+   {
+      lcd.setCursor(7,1);             // move cursor to second line "1" and 9 spaces over             
+      lcd.print(resMin);      
+      lcd.print("  ");
+   }
+   
+   lcd_key = read_LCD_buttons();   // read the buttons
+ 
+   switch (lcd_key){               // depending on which button was pushed, we perform an action
+ 
+       case btnRIGHT:{             //  push button "RIGHT" and show the word on the screen
+          lcd.setCursor(0,1);             // move to the begining of the second line
+      lcd.print("               ");
+            prevTime = millis();
+            status = Lb; 
+            break;
+       }
+       case btnLEFT:{             
+          lcd.setCursor(0,1);             // move to the begining of the second line
+      lcd.print("               ");
+             prevTime = millis(); 
+             status = Wo;
+             break;
+       }    
+       case btnUP:{             
+          lcd.setCursor(0,1);             // move to the begining of the second line
+      lcd.print("               ");
+             prevTime = millis();
+             status = Sb; 
+             break;
+       }
+       case btnDOWN:{            
+             break;
+       }
+       case btnSELECT:{             
+             break;
+       }
+       case btnNONE:{             
+             break;
+       }
+   }
 }
