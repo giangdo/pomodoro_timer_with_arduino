@@ -135,7 +135,12 @@ E_Button read_buttons(){
     return noneB;
 }
 
-unsigned long prevTime = 0;
+typedef enum bool
+{
+	False = 0,
+	True  = 1
+}E_Bool;
+
 typedef enum state
 {
   workState   = 0,  //Working state
@@ -145,10 +150,24 @@ typedef enum state
   notifyState = 4   // Notify state
 }E_State; // Enum State
 
-unsigned long curSecond = 0;
-unsigned long curMin = 0;
-unsigned long resMin = 0;
-  
+typedef struct countDown 
+{
+	E_State state;
+	E_State prevSuccessState[17];
+	unsigned long mileStone; // Thời điểm được lấy lám mốc để tính khoảng thời gian đã trôi qua
+	unsigned long remain; // Thời gian còn lại tính theo đơn miligiây
+}T_CountDown;
+
+typedef struct count
+{
+	unsigned long period;  // Thời gian đếm lùi tính theo đơn vị miligiấy
+	unsigned char success; // Tồng số lần thành công
+	unsigned char fail;	  // Tổng số lần thất bại
+	char const * const progressStr; //Chuỗi sẽ in ra khi đang trong quá trình đếm
+	char const * const doneStr;     //Chuỗi sẽ in ra khi đếm xong
+	char const * const str;         //Tên của loại đếm xuống
+}T_Count;
+
 typedef enum mode
 {
 	countDownM = 0, // Countdown Mode
@@ -159,6 +178,7 @@ typedef enum mode
 
 typedef void (*buttonHdl) (eButton button,void *data);
 typedef void (*modeHdl) (void* data);
+
 typedef struct mode
 {
 	E_Mode mode; //Mode
@@ -169,36 +189,10 @@ typedef struct mode
 //Interface between mode and main thread
 typedef struct lcdBuffer
 {
-	char lcdBuf[2][17]; //
-	char lcdBufBlink[2][17];  //XXX should change to bit technique here
-	char lcdBufPrev[2][17];
-}T_LcdBuffer g_LcdBuffer;
+	char character[2][17]; //
+	char blink[2][17];  //XXX should change to bit technique here
+}T_LcdBuffer;
 
-typedef enum bool
-{
-	False = 0,
-	True  = 1
-}E_Bool;
-typedef struct countDown 
-{
-	unsigned long prevTime;
-	E_State state;
-	E_Bool countDone;
-	unsigned long mileStone;
-	unsigned char remain; // Thời gian còn lại tính theo đơn vị phút 
-	char prevState[17];
-}T_CountDown;
-
-typedef struct count
-{
-	unsigned char period; // Thời gian đếm lùi tính theo đơn vị phút
-
-	unsigned char success; // Tồng số lần thành công
-	unsigned char fail;	  // Tổng số lần thất bại
-	char const * const progressStr; //Chuỗi sẽ in ra khi đang trong quá trình đếm
-	char const * const doneStr;     //Chuỗi sẽ in ra khi đếm xong
-	char const * const str;         //Tên của loại đếm xuống
-}T_Count;
 
 typedef struct dataBlock
 {
@@ -207,7 +201,27 @@ typedef struct dataBlock
 	T_Count     sBreak;
 	T_Count     lBreak;
    E_Mode      curMode;
+	T_LcdBuffer lcdBuf;
 }T_DataBlock g_DataBlock;
+
+void lcd_buffer_clean();
+void lcd_buffer_insert(int line, int colum, char *str, eNumBlink blink);
+
+void lcd_buffer_clean()
+{
+	memset(&g_DataBlock.lcdBuf, 0, sizeof(g_DataBlock.lcdBuf);
+}
+
+void lcd_buffer_insert(int line, int colum, char *str, eNumBlink blink)
+{
+	if ((line < NUMBER_OF_LINE) &&
+		 (colum < NUMBER_OF_COLUM) &&
+		 ((NUMBER_OF_COLUM - colum) > strlen(str)))
+	{
+	memcpy(&(g_DataBlock.lcdBuf.character[line][colum]), str, strlen(str));
+	memset(&(g_DataBlock.lcdBuf.blink[line][colum]), blink, strlen(str));
+	}
+}
 
 void countDownButtonHdl(E_Button button);
 void countDownTaskHdl();
@@ -216,7 +230,6 @@ void summaryTaskHdl();
 void modifyButtonHdl(E_Button button);
 void modifyTaskHdl();
 
-// What is the mechanism to transfer data between mode
 T_Mode g_Mode[] = // global variable mode
 {
 	{countDownM , countDownButtonHdl , countDownTaskHdl},
@@ -224,93 +237,45 @@ T_Mode g_Mode[] = // global variable mode
 	{modifyM    , modififyButtonHdl  , modifyTaskHdl   }
 }
 
-void summaryButtonHdl(E_Button button)
+void insert_state(E_State state)
 {
-	T_Count *pT_Count = NULL;
-	switch (button)
+	//Thành viên mới nhất nằm ở đầu mảng, Thành viên cũ nhất nằm ở cuối mảng
+	E_State prev = state;
+	E_State cur;
+	for (unsigned char i = 0; i < sizeof(g_DataBlock.prevSuccessState), i++)
 	{
-		case selectB:
-		{
-			g_DataBlock.curMode = modifyM;
-			break;
-		}
-		case workB:
-		{
-			pT_Count = &g_DataBlock.work;
-			break;
-		}
-		case sBreakB:
-		{
-			pT_Count = &g_DataBlock.sBreak;
-			break;
-		}
-		case lBreakB:
-		{
-			pT_Count = &g_DataBlock.sBreak;
-			break;
-		}
-		case Stop:
-		case default:
-			{
-				break;
-			}
-	}
-	if (pT_Count != NULL)
-	{
-		pT_Count.success = 0;
-		pT_Count.fail = 0;
+		// Dịch phải
+		cur = g_DataBlock.prevSuccessState[i];  // Lưu giá trị hiện tại
+		g_DataBlock.prevSuccessState[i] = prev; // Cập nhật giá trị mới
+		prev = cur;                             // Chuẩn bị cho lần sau
 	}
 }
 
-void summaryTaskHdl()
+const char* recommended_next_state()
 {
-	// Print counter
-}
-
-void modifyButtonHdl(E_Button button)
-{
-	T_Count *pT_Count = NULL;
-	switch (button)
+	// XXX nên lưu thêm thông số thời điểm mà chu kỳ thành công để dễ dàng hơn trong
+	// việc đưa ra lởi khuyên
+	const char *str;
+	if ((g_DataBlock.prevSuccessState[0] == sBreakState) ||
+	    (g_DataBlock.prevSuccessState[0] == lBreakState))
 	{
-		case selectB:
-		{
-			g_DataBlock.curMode = modifyM;
-			break;
-		}
-		case workB:
-		{
-			pT_Count = &g_DataBlock.work;
-			break;
-		}
-		case sBreakB:
-		{
-			pT_Count = &g_DataBlock.sBreak;
-			break;
-		}
-		case lBreakB:
-		{
-			pT_Count = &g_DataBlock.sBreak;
-			break;
-		}
-		case Stop:
-		case default:
-			{
-				break;
-			}
+		return g_DataBlock.work.str; //Trước đó nghỉ thì bây giờ nên làm
 	}
-	if (pT_Count != NULL)
+	else
 	{
-		pT_Count.period--;
-		if (pT_Count.period == 1)
+		if ((g_DataBlock.prevSuccessState[1] == sBreakState) &&
+			 (g_DataBlock.prevSuccessState[2] == workState) &&
+			 (g_DataBlock.prevSuccessState[3] == sBreakState) &&
+			 (g_DataBlock.prevSuccessState[4] == workState) &&
+			 (g_DataBlock.prevSuccessState[5] == sBreakState))
 		{
-			pT_Count.period = MAX_PERIOD_MINUTE;
+			return g_DataBlock.lBreak.str;
+		}
+		else
+		{
+			return g_DataBlock.sBreak.str;
 		}
 	}
-}
-
-void modifyTaskHdl()
-{
-	// print period 
 }
 
 void countDownButtonHdl(E_Button button)
@@ -321,7 +286,7 @@ void countDownButtonHdl(E_Button button)
 	}
 	else
 	{
-		// Xác định chu kỳ hiện tại đã thành công hay chưa
+		// Xác định chu kỳ hiện tại có thất bại hay ko?
 		T_Count *pT_Count = NULL;
 		if (g_DataBlock.countDownData.state == workState)
 		{
@@ -338,10 +303,6 @@ void countDownButtonHdl(E_Button button)
 		if (pT_Count != NULL)
 		{
 			if (g_DataBlock.countDownData.remain == 0)
-			{
-				pT_Count->success++; // Chu kỳ thành công vì đã đếm hết về 0
-			}
-			else
 			{
 				pT_Count->fail++;
 			}
@@ -400,25 +361,44 @@ void countDownTaskHdl()
 
 	if (pT_Count != NULL) // Kiểm tra xem có đang ở state đếm nào ko ?
 	{
-		// Lưu ý là hàm millis() trả về giá trị tăng dần của timer, vì kiểu trả về là unsigned long -> giá trị
+		// Hàm millis() trả về giá trị tăng dần của timer, vì kiểu trả về là unsigned long -> giá trị
 		// trả về lớn nhất của hàm là 2^64 micro giấy -> dùng hàm này ta có thể đếm từ bây giờ đến khoảng năm
 		// trăm ngàn thiên niên kỉ nữa!
+		// Hàm millis() sẽ trả về cùng giá trị nếu ta gọi liên tục hàm này trong khoảng thời gian nhỏ hơn 1 mili giây
 
-		// Số giây đã trải qua từ lúc bấm nút cho đếm
-		unsigned long secPassed = (millis() - g_DataBlock.countDownData.mileStone) / SECOND_TO_MICROSECONDS;
-		// Số phút đã trải qua từ lúc bấm nút cho đếm
-		unsigned long minPassed = secPassed / MINUTE_TO_SECONDS;
-		if (minPassed <= pT_Count->period)
+		if (g_DataBlock.countDownData.remain != 0)
 		{
-			g_DataBlock.countDownData.remain = pT_Count->period - minPassed;
-			lcd_buffer_insert(LINE_1, 0, pT_Count->progressStr, False);
-			//lcd_buffer_insert(LINE_1, 17, num2Str(g_DataBlock.countDownData.remain), False);
+			// Số miligiây đã trải qua từ lúc bấm nút đếm
+			unsigned long msPassed = millis() - g_DataBlock.countDownData.mileStone;
+			if (msPassed <= pT_Count.period) 
+			{
+				g_DataBlock.countDownData.remain = pT_Count.period - msPassed;
+				unsigned int remainMin =
+					(g_DataBlock.countDownData.remain / SECOND_TO_MILISECONDS) / MINUTE_TO_SECONDS;
+				unsigned int remainSec =
+					(g_DataBlock.countDownData.remain / SECOND_TO_MILISECONDS) % MINUTE_TO_SECONDS;
+
+				lcd_buffer_clean();
+				char string[17];
+				snprintf(string, sizeof(string), "%s %d:%d", pT_Count->progressStr, remainMin, remainSec);
+				lcd_buffer_insert(LINE_1, 0, string, False);
+			}
+
+			if (g_DataBlock.countDownData.remain == 0) 
+			{
+				// Ngay tại thời điểm thời gian về bằng 0, ta phải đếm lên số lần thành công ngay lập tức
+				// và xử lý sao cho đoạn lệnh này chỉ được chạy một lần duy nhất trong suốt chu kỳ
+				pT_Count->success++;
+
+				// Cập nhật dữ liệu cho bảng chứa các trạng thái trước đó
+				insert_state(g_DataBlock.countDownData.state);
+			}
 		}
 		else
 		{
-			lcd_buffer_insert(LINE_0, 0, pT_Count->doneStr, True);
-			lcd_buffer_insert(LINE_1, 0, "Please " , True);
-			//lcd_buffer_insert(LINE_1, 7,  recommended_next_state(); True);
+			char string[17];
+			snprintf(string, sizeof(string), "%s, let %s!", pT_Count->doneStr, recommended_next_state());
+			lcd_buffer_insert(LINE_0, 0, string, True);
 		}
 	}
 	else // Ko có pointer => đang ở Stop State
@@ -426,6 +406,128 @@ void countDownTaskHdl()
 		lcd_buffer_insert(LINE_0, 0, "Let pomodoro", False);
 		lcd_buffer_insert(LINE_1, 0, "Let do it!" , False);
 	}
+}
+
+void summaryButtonHdl(E_Button button)
+{
+	T_Count *pT_Count = NULL;
+	switch (button)
+	{
+		case selectB:
+		{
+			g_DataBlock.curMode = modifyM;
+			break;
+		}
+		case workB:
+		{
+			pT_Count = &g_DataBlock.work;
+			break;
+		}
+		case sBreakB:
+		{
+			pT_Count = &g_DataBlock.sBreak;
+			break;
+		}
+		case lBreakB:
+		{
+			pT_Count = &g_DataBlock.sBreak;
+			break;
+		}
+		case Stop:
+		case default:
+			{
+				break;
+			}
+	}
+	if (pT_Count != NULL)
+	{
+		pT_Count.success = 0;
+		pT_Count.fail = 0;
+	}
+}
+
+void summaryTaskHdl()
+{
+	char string[6];
+	memset(string, 0, sizeof(string));
+
+	lcd_buffer_clean(); //Xoá tất bộ đệm lcd
+
+	lcd_buffer_insert(LINE_0, 0, "Wo", False);
+	snprintf(string, sizeof(string), "%d/%d", g_DataBlock.work.success,
+	         g_DataBlock.work.fail+ g_DataBlock.work.success);
+	lcd_buffer_insert(LINE_1, 0, string, False);
+
+	lcd_buffer_insert(LINE_0, 7, "Sb", False);
+	snprintf(string, sizeof(string), "%d/%d", g_DataBlock.sBreak.success,
+	         g_DataBlock.sBreak.fail+ g_DataBlock.sBreak.success);
+	lcd_buffer_insert(LINE_1, 7, string, False);
+
+	lcd_buffer_insert(LINE_0, 14, "Lb", False);
+	snprintf(string, sizeof(string), "%d/%d", g_DataBlock.lBreak.success,
+	         g_DataBlock.lBreak.fail+ g_DataBlock.lBreak.success);
+	lcd_buffer_insert(LINE_1, 13, string, False);
+}
+
+void modifyButtonHdl(E_Button button)
+{
+	T_Count *pT_Count = NULL;
+	switch (button)
+	{
+		case selectB:
+		{
+			g_DataBlock.curMode = modifyM;
+			break;
+		}
+		case workB:
+		{
+			pT_Count = &g_DataBlock.work;
+			break;
+		}
+		case sBreakB:
+		{
+			pT_Count = &g_DataBlock.sBreak;
+			break;
+		}
+		case lBreakB:
+		{
+			pT_Count = &g_DataBlock.sBreak;
+			break;
+		}
+		case Stop:
+		case default:
+			{
+				break;
+			}
+	}
+	if (pT_Count != NULL)
+	{
+		pT_Count.period = pT_Count - MINUTE_TO_MILISECOND;
+		if (pT_Count.period == 0)
+		{
+			pT_Count.period = MAX_PERIOD_MINUTE * MINUTE_TO_MILISECOND;
+		}
+	}
+}
+
+void modifyTaskHdl()
+{
+	char string[3];
+	memset(string, 0, sizeof(string));
+
+	lcd_buffer_clean(); //Xoá tất bộ đệm lcd
+
+	lcd_buffer_insert(LINE_0, 0, "Wo", False);
+	snprintf(string, sizeof(string), "%d", g_DataBlock.work.period/MINUTE_TO_MILISECOND);
+	lcd_buffer_insert(LINE_1, 0, string, False);
+
+	lcd_buffer_insert(LINE_0, 7, "Sb", False);
+	snprintf(string, sizeof(string), "%d", g_DataBlock.sBreak.period/MINUTE_TO_MILISECOND);
+	lcd_buffer_insert(LINE_1, 7, string, False);
+
+	lcd_buffer_insert(LINE_0, 14, "Lb", False);
+	snprintf(string, sizeof(string), "%d", g_DataBlock.lBreak.period/MINUTE_TO_MILISECOND);
+	lcd_buffer_insert(LINE_1, 14, string, False);
 }
 
 void setup()
@@ -483,8 +585,6 @@ void setup()
 	g_DataBlock.countDownData.state = stopState;
 }
 
-		// XXX should use maxtrix technique to handle instead of create two array
-		lcd_buffer_insert(int line, int colum, char *str, int str length, eNumBlink blink);
 
 void loop()
 {  
