@@ -626,6 +626,8 @@ void summaryTaskHdl()
 
 	lcd_buffer_clean(); //Xoá tất bộ đệm lcd
 
+	/*
+	// XXX todo
 	lcd_buffer_insert(LINE_0, 1, "Wo", False);
 	snprintf(string, sizeof(string), "%d/%d", g_Data.work.success,
 				g_Data.work.fail + g_Data.work.success);
@@ -640,6 +642,21 @@ void summaryTaskHdl()
 	snprintf(string, sizeof(string), "%d/%d", g_Data.lBreak.success,
 				g_Data.lBreak.fail + g_Data.lBreak.success);
 	lcd_buffer_insert(LINE_1, 12, string, False);
+	*/
+	lcd_buffer_insert(LINE_0, 0, "Num of|", False);
+	lcd_buffer_insert(LINE_1, 0, " Done |", False);
+
+	lcd_buffer_insert(LINE_0, 8, "Wo", False);
+	snprintf(string, sizeof(string), "%d", g_Data.work.success);
+	lcd_buffer_insert(LINE_1, 8, string, False);
+
+	lcd_buffer_insert(LINE_0, 11, "Sb", False);
+	snprintf(string, sizeof(string), "%d", g_Data.sBreak.success);
+	lcd_buffer_insert(LINE_1, 11, string, False);
+
+	lcd_buffer_insert(LINE_0, 14, "Lb", False);
+	snprintf(string, sizeof(string), "%d", g_Data.lBreak.success);
+	lcd_buffer_insert(LINE_1, 14, string, False);
 }
 
 void modifyButtonHdl(E_Button button)
