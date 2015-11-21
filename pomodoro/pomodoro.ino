@@ -119,14 +119,15 @@ typedef enum e_bool
 	True  = 1
 }E_Bool;
 
+static unsigned long lastDebounceTime = 0;
+static const unsigned long debounceDelay = 50;
+static E_Button lastButton = noneB;
 // Hàm này dùng để xác định nút đã được nhấn trên board lcd shield
+static E_Bool returned = False;
 E_Button read_buttons_2()
 {
-	static unsigned long lastDebounceTime = 0;
-	static const unsigned long debounceDelay = 50;
 	E_Button tmpButton = noneB;
 	E_Button button;
-	static E_Button lastButton = noneB;
 	// MCU đọc giá trị của hiệu điện thế từ chân ADC (Analog Digital Converter)
 	// hàm analogRead() được khai báo trong arduino-1.6.6/hardware/arduino/avr/cores/arduino/wiring_analog.c
 	int adc = analogRead(adcPIN);
@@ -136,15 +137,70 @@ E_Button read_buttons_2()
 	// hiệu điện thế của một chân MCU. -> Tiết kiệm được chân MCU vì cách thông thường là
 	// mỗi nút nhấn sẽ được kiểm soát bởi một chân MCU.
 
-	// Khi adc là rất lớn ,gần như vô cùng -> ko có nút nào được nhấn
-	if (adc > 1000) return noneB;
+	// Nếu dùng board LCD shield version 1.0 thì dùng bảng sau xóa bảng còn lại
+	if (adc < 50)
+		tmpButton = lBreakB; //Khi nhấn nút lBreak  giá trị chính xác trả về là 0
+	else if (adc < 195)
+		tmpButton = workB;   //Khi nhấn nút workB   giá trị chính xác trả về là 144
+	else if (adc < 380)
+		tmpButton = sBreakB; //Khi nhấn nút sBreakB giá trị chính xác trả về là 329
+	else if (adc < 555)
+		tmpButton = stopB;   //Khi nhấn nút stopB   giá trị chính xác trả về là 504
+	else if (adc < 790)
+		tmpButton = selectB; //Khi nhấn nút selectB giá trị chính xác trả về là 741
+	else 
+		tmpButton = noneB; 
+
+	if (tmpButton != lastButton)
+	{
+		lastDebounceTime = millis();
+		returned = False;
+	}
+
+	if ((millis() - lastDebounceTime) > debounceDelay)
+   {
+	   if (returned == False)
+		{
+			button = tmpButton;
+			returned = True;
+		}
+		else
+		{
+			button = noneB;
+		}
+	}
+
+	lastButton = tmpButton;
+
+	return button;
+}
+
+E_Button read_buttons_3()
+{
+	E_Button tmpButton = noneB;
+	E_Button button;
+	// MCU đọc giá trị của hiệu điện thế từ chân ADC (Analog Digital Converter)
+	// hàm analogRead() được khai báo trong arduino-1.6.6/hardware/arduino/avr/cores/arduino/wiring_analog.c
+	int adc = analogRead(adcPIN);
+
+	// Thủ thuật hay: Bằng cách nối các nút nhấn vào một chân ADC của MCU như trong board
+	// LCD shield này ta có thể xác định được trạng thái của nút nhấn thông qua giá trị
+	// hiệu điện thế của một chân MCU. -> Tiết kiệm được chân MCU vì cách thông thường là
+	// mỗi nút nhấn sẽ được kiểm soát bởi một chân MCU.
 
 	// Nếu dùng board LCD shield version 1.0 thì dùng bảng sau xóa bảng còn lại
-	if (adc < 50)  tmpButton = lBreakB; //Khi nhấn nút lBreak  giá trị chính xác trả về là 0
-	if (adc < 195) tmpButton = workB;   //Khi nhấn nút workB   giá trị chính xác trả về là 144
-	if (adc < 380) tmpButton = sBreakB; //Khi nhấn nút sBreakB giá trị chính xác trả về là 329
-	if (adc < 555) tmpButton = stopB;   //Khi nhấn nút stopB   giá trị chính xác trả về là 504
-	if (adc < 790) tmpButton = selectB; //Khi nhấn nút selectB giá trị chính xác trả về là 741
+	if (adc < 50)
+		tmpButton = lBreakB; //Khi nhấn nút lBreak  giá trị chính xác trả về là 0
+	else if (adc < 195)
+		tmpButton = workB;   //Khi nhấn nút workB   giá trị chính xác trả về là 144
+	else if (adc < 380)
+		tmpButton = sBreakB; //Khi nhấn nút sBreakB giá trị chính xác trả về là 329
+	else if (adc < 555)
+		tmpButton = stopB;   //Khi nhấn nút stopB   giá trị chính xác trả về là 504
+	else if (adc < 790)
+		tmpButton = selectB; //Khi nhấn nút selectB giá trị chính xác trả về là 741
+	else 
+		tmpButton = noneB; 
 
 	if (tmpButton != lastButton)
 	{
@@ -520,8 +576,8 @@ void countDownTaskHdl()
 	else // Ko có pointer => đang ở Stop State
 	{
 		lcd_buffer_clean();
-		lcd_buffer_insert(LINE_0, 0, "Let Pomodoro by", False);
-		lcd_buffer_insert(LINE_1, 0, "press Wo/Sb/Lb" , False);
+		lcd_buffer_insert(LINE_0, 0, "   Pomodoro", False);
+		lcd_buffer_insert(LINE_1, 0, "Press Wo/Sb/Lb!" , False);
 	}
 }
 
@@ -637,13 +693,16 @@ void modifyTaskHdl()
 
 	lcd_buffer_clean(); //Xoá tất bộ đệm lcd
 
-	lcd_buffer_insert(LINE_0, 0, "Wo", False);
-	snprintf(string, sizeof(string), "%lu", g_Data.work.period/MINUTE_TO_MILISECOND);
-	lcd_buffer_insert(LINE_1, 0, string, False);
+	lcd_buffer_insert(LINE_0, 0, "Change|", False);
+	lcd_buffer_insert(LINE_1, 0, "Period|", False);
 
-	lcd_buffer_insert(LINE_0, 7, "Sb", False);
+	lcd_buffer_insert(LINE_0, 8, "Wo", False);
+	snprintf(string, sizeof(string), "%lu", g_Data.work.period/MINUTE_TO_MILISECOND);
+	lcd_buffer_insert(LINE_1, 8, string, False);
+
+	lcd_buffer_insert(LINE_0, 11, "Sb", False);
 	snprintf(string, sizeof(string), "%lu", g_Data.sBreak.period/MINUTE_TO_MILISECOND);
-	lcd_buffer_insert(LINE_1, 7, string, False);
+	lcd_buffer_insert(LINE_1, 11, string, False);
 
 	lcd_buffer_insert(LINE_0, 14, "Lb", False);
 	snprintf(string, sizeof(string), "%lu", g_Data.lBreak.period/MINUTE_TO_MILISECOND);
