@@ -162,7 +162,7 @@ typedef struct t_countDown
 const unsigned long MINUTE_TO_SECONDS = 60;
 const unsigned long SECOND_TO_MILISECONDS = 1000;
 const unsigned long MINUTE_TO_MILISECOND = MINUTE_TO_SECONDS * SECOND_TO_MILISECONDS;
-const unsigned long MAX_PERIOD_MINUTE = 60 * MINUTE_TO_MILISECOND; //60 Minute
+const unsigned long MAX_PERIOD_MINUTE = 60;
 
 typedef struct t_count
 {
@@ -374,7 +374,7 @@ void countDownButtonHdl(E_Button button)
 		}
 		if (pT_Count != NULL)
 		{
-			if (g_Data.cntDown.remain == 0)
+			if (g_Data.cntDown.remain != 0)
 			{
 				pT_Count->fail++;
 			}
@@ -450,9 +450,11 @@ void countDownTaskHdl()
 				unsigned int remainSec =
 					(g_Data.cntDown.remain / SECOND_TO_MILISECONDS) % MINUTE_TO_SECONDS;
 
-				char string[17];
-				snprintf(string, sizeof(string), "%s %d:%d", pT_Count->progressStr, remainMin, remainSec);
 				lcd_buffer_clean();
+				char string[17];
+				snprintf(string, sizeof(string), "%s", pT_Count->progressStr);
+				lcd_buffer_insert(LINE_0, 0, string, False);
+				snprintf(string, sizeof(string), "%d:%d", remainMin, remainSec);
 				lcd_buffer_insert(LINE_1, 0, string, False);
 			}
 
@@ -477,8 +479,8 @@ void countDownTaskHdl()
 	else // Ko có pointer => đang ở Stop State
 	{
 		lcd_buffer_clean();
-		lcd_buffer_insert(LINE_0, 0, "* Make it easy *", False);
-		lcd_buffer_insert(LINE_1, 0, "* Pomodoro now *" , True);
+		lcd_buffer_insert(LINE_0, 0, "Let Pomodoro by", False);
+		lcd_buffer_insert(LINE_1, 0, "press Wo/Sb/Lb" , False);
 	}
 }
 
@@ -504,7 +506,7 @@ void summaryButtonHdl(E_Button button)
 			}
 		case lBreakB:
 			{
-				pT_Count = &g_Data.sBreak;
+				pT_Count = &g_Data.lBreak;
 				break;
 			}
 		case stopB:
@@ -527,20 +529,20 @@ void summaryTaskHdl()
 
 	lcd_buffer_clean(); //Xoá tất bộ đệm lcd
 
-	lcd_buffer_insert(LINE_0, 0, "Wo", False);
+	lcd_buffer_insert(LINE_0, 1, "Wo", False);
 	snprintf(string, sizeof(string), "%d/%d", g_Data.work.success,
-				g_Data.work.fail+ g_Data.work.success);
+				g_Data.work.fail + g_Data.work.success);
 	lcd_buffer_insert(LINE_1, 0, string, False);
 
 	lcd_buffer_insert(LINE_0, 7, "Sb", False);
 	snprintf(string, sizeof(string), "%d/%d", g_Data.sBreak.success,
-				g_Data.sBreak.fail+ g_Data.sBreak.success);
-	lcd_buffer_insert(LINE_1, 7, string, False);
+				g_Data.sBreak.fail + g_Data.sBreak.success);
+	lcd_buffer_insert(LINE_1, 6, string, False);
 
-	lcd_buffer_insert(LINE_0, 14, "Lb", False);
+	lcd_buffer_insert(LINE_0, 13, "Lb", False);
 	snprintf(string, sizeof(string), "%d/%d", g_Data.lBreak.success,
-				g_Data.lBreak.fail+ g_Data.lBreak.success);
-	lcd_buffer_insert(LINE_1, 13, string, False);
+				g_Data.lBreak.fail + g_Data.lBreak.success);
+	lcd_buffer_insert(LINE_1, 12, string, False);
 }
 
 void modifyButtonHdl(E_Button button)
@@ -550,7 +552,7 @@ void modifyButtonHdl(E_Button button)
 	{
 		case selectB:
 			{
-				g_Data.curMode = modifyM;
+				g_Data.curMode = countDownM;
 				break;
 			}
 		case workB:
@@ -565,7 +567,7 @@ void modifyButtonHdl(E_Button button)
 			}
 		case lBreakB:
 			{
-				pT_Count = &g_Data.sBreak;
+				pT_Count = &g_Data.lBreak;
 				break;
 			}
 		case stopB:
@@ -576,8 +578,11 @@ void modifyButtonHdl(E_Button button)
 	}
 	if (pT_Count != NULL)
 	{
-		pT_Count->period = pT_Count->period - MINUTE_TO_MILISECOND;
-		if (pT_Count->period == 0)
+		if (pT_Count->period > MINUTE_TO_MILISECOND)
+		{
+			pT_Count->period = pT_Count->period - MINUTE_TO_MILISECOND;
+		}
+		else
 		{
 			pT_Count->period = MAX_PERIOD_MINUTE * MINUTE_TO_MILISECOND;
 		}
@@ -670,6 +675,21 @@ void setup()
 	g_Data.lBreak.progressStr = "LBreaking";
 	g_Data.lBreak.doneStr     = "LBroken";
 	g_Data.lBreak.str         = "Lb";
+
+	T_Count *pCount = &g_Data.work;
+	pCount->period = 25 * SECOND_TO_MILISECONDS;
+	pCount->success = 0;
+	pCount->fail = 0;
+
+	pCount = &g_Data.sBreak;
+	pCount->period = 5 * SECOND_TO_MILISECONDS;
+	pCount->success = 0;
+	pCount->fail = 0;
+
+	pCount = &g_Data.lBreak;
+	pCount->period = 15 * SECOND_TO_MILISECONDS;
+	pCount->success = 0;
+	pCount->fail = 0;
 }
 
 //----------------------------------------------------------------------------------------
