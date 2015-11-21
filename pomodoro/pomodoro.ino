@@ -120,6 +120,47 @@ typedef enum e_bool
 }E_Bool;
 
 // Hàm này dùng để xác định nút đã được nhấn trên board lcd shield
+E_Button read_buttons_2()
+{
+	static unsigned long lastDebounceTime = 0;
+	static const unsigned long debounceDelay = 50;
+	E_Button tmpButton = noneB;
+	E_Button button;
+	static E_Button lastButton = noneB;
+	// MCU đọc giá trị của hiệu điện thế từ chân ADC (Analog Digital Converter)
+	// hàm analogRead() được khai báo trong arduino-1.6.6/hardware/arduino/avr/cores/arduino/wiring_analog.c
+	int adc = analogRead(adcPIN);
+
+	// Thủ thuật hay: Bằng cách nối các nút nhấn vào một chân ADC của MCU như trong board
+	// LCD shield này ta có thể xác định được trạng thái của nút nhấn thông qua giá trị
+	// hiệu điện thế của một chân MCU. -> Tiết kiệm được chân MCU vì cách thông thường là
+	// mỗi nút nhấn sẽ được kiểm soát bởi một chân MCU.
+
+	// Khi adc là rất lớn ,gần như vô cùng -> ko có nút nào được nhấn
+	if (adc > 1000) return noneB;
+
+	// Nếu dùng board LCD shield version 1.0 thì dùng bảng sau xóa bảng còn lại
+	if (adc < 50)  tmpButton = lBreakB; //Khi nhấn nút lBreak  giá trị chính xác trả về là 0
+	if (adc < 195) tmpButton = workB;   //Khi nhấn nút workB   giá trị chính xác trả về là 144
+	if (adc < 380) tmpButton = sBreakB; //Khi nhấn nút sBreakB giá trị chính xác trả về là 329
+	if (adc < 555) tmpButton = stopB;   //Khi nhấn nút stopB   giá trị chính xác trả về là 504
+	if (adc < 790) tmpButton = selectB; //Khi nhấn nút selectB giá trị chính xác trả về là 741
+
+	if (tmpButton != lastButton)
+	{
+		lastDebounceTime = millis();
+	}
+
+   if ((millis() - lastDebounceTime) > debounceDelay)
+   {
+	   button = tmpButton;
+	}
+
+	lastButton = tmpButton;
+
+	return button;
+}
+
 E_Button read_buttons()
 {
 	// MCU đọc giá trị của hiệu điện thế từ chân ADC (Analog Digital Converter)
@@ -615,6 +656,9 @@ void modifyTaskHdl()
 //----------------------------------------------------------------------------------------
 void setup()
 {
+	// xac dinh mode cua chan adc:
+   pinMode(adcPIN, INPUT);
+
 	// Khởi động LCD dùng hàm void LiquidCrystal::begin(uint8_t cols, uint8_t lines, uint8_t dotsize)
 	// và dùng kỹ thuật default argument trong C++ để không cần cung cấp thông tin về dotsize
 	// mà lấy giá trị mặc định LCD_5x8DOTS.
@@ -699,7 +743,8 @@ void setup()
 void loop()
 {
 	// Đọc tín hiệu ADC để biết nút nào đã được nhấn
-	E_Button button = read_buttons();
+	//E_Button button = read_buttons();
+	E_Button button = read_buttons_2();
 
 	// Xác định mode hiện tại và thực hiện công việc trong mode đó
 	unsigned int modeIndex;
