@@ -109,8 +109,7 @@ typedef enum e_state
 	workState   = 0,  //Working state
 	sBreakState = 1,  //Short Break state
 	lBreakState = 2,  //Long Break state
-	stopState   = 3,  //Stop state
-	notifyState = 4   // Notify state
+	stopState   = 3  //Stop state
 }E_State; // Enum State
 
 typedef enum e_bool
@@ -175,7 +174,7 @@ E_Button read_buttons_2()
 	return button;
 }
 
-E_Button read_buttons_3()
+E_Button read_buttons_1()
 {
 	E_Button tmpButton = noneB;
 	E_Button button;
@@ -217,7 +216,7 @@ E_Button read_buttons_3()
 	return button;
 }
 
-E_Button read_buttons()
+E_Button read_buttons_0()
 {
 	// MCU đọc giá trị của hiệu điện thế từ chân ADC (Analog Digital Converter)
 	// hàm analogRead() được khai báo trong arduino-1.6.6/hardware/arduino/avr/cores/arduino/wiring_analog.c
@@ -251,7 +250,7 @@ E_Button read_buttons()
 typedef struct t_countDown
 {
 	E_State state;
-	E_State prevSucState[17];
+	E_State prevSucState[NUMBER_OF_COLUM];
 	unsigned long mileStone; // Thời điểm được lấy lám mốc để tính khoảng thời gian đã trôi qua
 	unsigned long remain; // Thời gian còn lại tính theo đơn miligiây
 }T_CountDown;
@@ -265,7 +264,7 @@ typedef struct t_count
 {
 	unsigned long period;  // Thời gian đếm lùi tính theo đơn vị miligiấy
 	unsigned char success; // Tồng số lần thành công
-	unsigned char fail;	  // Tổng số lần thất bại
+	unsigned char total;	  // Tổng số lần thất bại
 	char const * progressStr; //Chuỗi sẽ in ra khi đang trong quá trình đếm
 	char const * doneStr;     //Chuỗi sẽ in ra khi đếm xong
 	char const * str;         //Tên của loại đếm xuống
@@ -295,8 +294,9 @@ typedef struct t_lcdBuffer
 	char origin[NUMBER_OF_LINE][NUMBER_OF_COLUM];
 	E_Bool blink[NUMBER_OF_LINE][NUMBER_OF_COLUM];  //XXX should change to bit technique here
 	char sendOut[NUMBER_OF_LINE][NUMBER_OF_COLUM];
+	char sendOutInStr[NUMBER_OF_LINE][NUMBER_OF_COLUM + 1];
 }T_LcdBuffer;
-#define LCD_CONTROL_FREQ 50 // 20 Milisecond
+#define LCD_CONTROL_FREQ 50 // 50 Milisecond
 #define BLINK_FREQUENCY 500 // 500 Milisecond
 #define BLINK_DUTY_CYCLE 250 // 250 milisecond
 
@@ -342,11 +342,12 @@ void lcd_flush_out()
 	char* p_origin = g_Data.lcdBuf.origin[0];
 	E_Bool* p_blink = g_Data.lcdBuf.blink[0];
 	char* p_sendOut = g_Data.lcdBuf.sendOut[0];
+	unsigned long curMsCounter = millis();
 
-	if ((millis() % LCD_CONTROL_FREQ) == 0)
+	if ((curMsCounter % LCD_CONTROL_FREQ) == 0)
 	{
 		// Tạo hiệu ứng nhấp nháy
-		if ((millis() % BLINK_FREQUENCY) < BLINK_DUTY_CYCLE)  
+		if ((curMsCounter % BLINK_FREQUENCY) < BLINK_DUTY_CYCLE)  
 		{
 			// Trong khoảng 250ms đầu tiên của 500ms thì giữ nguyên
 			memcpy(p_sendOut, p_origin, sizeof(g_Data.lcdBuf.origin));
@@ -377,18 +378,16 @@ void lcd_flush_out()
 			}
 		}
 
-		char sendOut_line0[NUMBER_OF_COLUM + 1];
-		char sendOut_line1[NUMBER_OF_COLUM + 1];
-		memcpy(sendOut_line0, g_Data.lcdBuf.sendOut[LINE_0],NUMBER_OF_COLUM);
-		memcpy(sendOut_line1, g_Data.lcdBuf.sendOut[LINE_1],NUMBER_OF_COLUM);
+		memcpy(g_Data.lcdBuf.sendOutInStr[LINE_0], g_Data.lcdBuf.sendOut[LINE_0], NUMBER_OF_COLUM);
+		memcpy(g_Data.lcdBuf.sendOutInStr[LINE_1], g_Data.lcdBuf.sendOut[LINE_1], NUMBER_OF_COLUM);
 
-		sendOut_line0[NUMBER_OF_COLUM] = 0; // add NULL
-		sendOut_line1[NUMBER_OF_COLUM] = 0; // add NULL
+		g_Data.lcdBuf.sendOutInStr[LINE_0][NUMBER_OF_COLUM] = 0; // add NULL
+		g_Data.lcdBuf.sendOutInStr[LINE_1][NUMBER_OF_COLUM] = 0; // add NULL
 
 		lcd.setCursor(COLUM_0,LINE_0);
-		lcd.print(sendOut_line0);
+		lcd.print(g_Data.lcdBuf.sendOutInStr[LINE_0]);
 		lcd.setCursor(COLUM_0,LINE_1);
-		lcd.print(sendOut_line1);
+		lcd.print(g_Data.lcdBuf.sendOutInStr[LINE_1]);
 	}
 }
 
@@ -455,28 +454,6 @@ void countDownButtonHdl(E_Button button)
 	}
 	else
 	{
-		// Xác định chu kỳ hiện tại có thất bại hay ko?
-		T_Count *pT_Count = NULL;
-		if (g_Data.cntDown.state == workState)
-		{
-			pT_Count = &g_Data.work;
-		}
-		else if (g_Data.cntDown.state == sBreakState)
-		{
-			pT_Count = &g_Data.sBreak;
-		}
-		else if (g_Data.cntDown.state == lBreakState)
-		{
-			pT_Count = &g_Data.lBreak;
-		}
-		if (pT_Count != NULL)
-		{
-			if (g_Data.cntDown.remain != 0)
-			{
-				pT_Count->fail++;
-			}
-		}
-
 		// Xử lý công việc theo chức năng của nút nhấn
 		if (button == selectB)
 		{
@@ -496,16 +473,19 @@ void countDownButtonHdl(E_Button button)
 			{
 				g_Data.cntDown.state = workState;
 				g_Data.cntDown.remain = g_Data.work.period;
+				g_Data.work.total++;
 			}
 			else if (button == sBreakB)
 			{
 				g_Data.cntDown.state = sBreakState;
 				g_Data.cntDown.remain = g_Data.sBreak.period;
+				g_Data.sBreak.total++;
 			}
 			else if (button == lBreakB)
 			{
 				g_Data.cntDown.state = lBreakState;
 				g_Data.cntDown.remain = g_Data.lBreak.period;
+				g_Data.lBreak.total++;
 			}
 		}
 	}
@@ -554,6 +534,10 @@ void countDownTaskHdl()
 				snprintf(string, sizeof(string), "%d:%d", remainMin, remainSec);
 				lcd_buffer_insert(LINE_1, 0, string, False);
 			}
+			else
+			{
+				g_Data.cntDown.remain = 0;
+			}
 
 			if (g_Data.cntDown.remain == 0)
 			{
@@ -567,10 +551,35 @@ void countDownTaskHdl()
 		}
 		else
 		{
-			char string[17];
-			snprintf(string, sizeof(string), "%s, let %s!", pT_Count->doneStr, recommended_next_state());
 			lcd_buffer_clean();
+			char string[NUMBER_OF_COLUM + 1];
+			memset(string, 0, sizeof(string));
+			char numCharater = 0;
+			for (int i = 8; i >= 0; i--)
+			{
+				const char *stateStr = NULL;
+				if (g_Data.cntDown.prevSucState[i] == workState)
+				{
+					stateStr = g_Data.work.str;
+				}
+				else if (g_Data.cntDown.prevSucState[i] == sBreakState)
+				{
+					stateStr = g_Data.sBreak.str;
+				}
+				else if (g_Data.cntDown.prevSucState[i] == lBreakState)
+				{
+					stateStr = g_Data.lBreak.str;
+				}
+				
+				if (stateStr != NULL)
+				{
+					char temp = snprintf(string + numCharater , sizeof(string) - numCharater , "%s", stateStr); 
+					numCharater += temp;
+				}
+			}
 			lcd_buffer_insert(LINE_0, 0, string, True);
+			snprintf(string, sizeof(string), "%s, let %s!", pT_Count->doneStr, recommended_next_state());
+			lcd_buffer_insert(LINE_1, 0, string, True);
 		}
 	}
 	else // Ko có pointer => đang ở Stop State
@@ -615,7 +624,7 @@ void summaryButtonHdl(E_Button button)
 	if (pT_Count != NULL)
 	{
 		pT_Count->success = 0;
-		pT_Count->fail = 0;
+		pT_Count->total = 0;
 	}
 }
 
@@ -626,37 +635,18 @@ void summaryTaskHdl()
 
 	lcd_buffer_clean(); //Xoá tất bộ đệm lcd
 
-	/*
-	// XXX todo
-	lcd_buffer_insert(LINE_0, 1, "Wo", False);
-	snprintf(string, sizeof(string), "%d/%d", g_Data.work.success,
-				g_Data.work.fail + g_Data.work.success);
+	lcd_buffer_insert(LINE_0, 0, "Wo", False);
+	snprintf(string, sizeof(string), "%d/%d", g_Data.work.success, g_Data.work.total);
 	lcd_buffer_insert(LINE_1, 0, string, False);
 
-	lcd_buffer_insert(LINE_0, 7, "Sb", False);
-	snprintf(string, sizeof(string), "%d/%d", g_Data.sBreak.success,
-				g_Data.sBreak.fail + g_Data.sBreak.success);
+	lcd_buffer_insert(LINE_0, 6, "Sb", False);
+	snprintf(string, sizeof(string), "%d/%d", g_Data.sBreak.success, g_Data.sBreak.total);
 	lcd_buffer_insert(LINE_1, 6, string, False);
 
-	lcd_buffer_insert(LINE_0, 13, "Lb", False);
-	snprintf(string, sizeof(string), "%d/%d", g_Data.lBreak.success,
-				g_Data.lBreak.fail + g_Data.lBreak.success);
+	lcd_buffer_insert(LINE_0, 12, "Lb", False);
+	snprintf(string, sizeof(string), "%d/%d", g_Data.lBreak.success, g_Data.lBreak.total);
 	lcd_buffer_insert(LINE_1, 12, string, False);
-	*/
-	lcd_buffer_insert(LINE_0, 0, "Num of|", False);
-	lcd_buffer_insert(LINE_1, 0, " Done |", False);
 
-	lcd_buffer_insert(LINE_0, 8, "Wo", False);
-	snprintf(string, sizeof(string), "%d", g_Data.work.success);
-	lcd_buffer_insert(LINE_1, 8, string, False);
-
-	lcd_buffer_insert(LINE_0, 11, "Sb", False);
-	snprintf(string, sizeof(string), "%d", g_Data.sBreak.success);
-	lcd_buffer_insert(LINE_1, 11, string, False);
-
-	lcd_buffer_insert(LINE_0, 14, "Lb", False);
-	snprintf(string, sizeof(string), "%d", g_Data.lBreak.success);
-	lcd_buffer_insert(LINE_1, 14, string, False);
 }
 
 void modifyButtonHdl(E_Button button)
@@ -797,19 +787,24 @@ void setup()
 	g_Data.lBreak.str         = "Lb";
 
 	T_Count *pCount = &g_Data.work;
-	pCount->period = 25 * SECOND_TO_MILISECONDS;
+	pCount->period = 10 * SECOND_TO_MILISECONDS;
 	pCount->success = 0;
-	pCount->fail = 0;
+	pCount->total = 0;
 
 	pCount = &g_Data.sBreak;
-	pCount->period = 5 * SECOND_TO_MILISECONDS;
+	pCount->period = 3 * SECOND_TO_MILISECONDS;
 	pCount->success = 0;
-	pCount->fail = 0;
+	pCount->total = 0;
 
 	pCount = &g_Data.lBreak;
-	pCount->period = 15 * SECOND_TO_MILISECONDS;
+	pCount->period = 5 * SECOND_TO_MILISECONDS;
 	pCount->success = 0;
-	pCount->fail = 0;
+	pCount->total = 0;
+
+	for (int k = 0; k < NUMBER_OF_COLUM; k++)
+	{
+		g_Data.cntDown.prevSucState[k] = stopState;
+	}
 }
 
 //----------------------------------------------------------------------------------------
