@@ -553,9 +553,8 @@ void countDownTaskHdl()
 		{
 			lcd_buffer_clean();
 			char string[NUMBER_OF_COLUM + 1];
-			memset(string, 0, sizeof(string));
 			char numCharater = 0;
-			for (int i = 8; i >= 0; i--)
+			for (int i = (NUMBER_OF_COLUM / 2) - 1; i >= 0; i--)
 			{
 				const char *stateStr = NULL;
 				if (g_Data.cntDown.prevSucState[i] == workState)
@@ -573,11 +572,13 @@ void countDownTaskHdl()
 				
 				if (stateStr != NULL)
 				{
-					char temp = snprintf(string + numCharater , sizeof(string) - numCharater , "%s", stateStr); 
+					unsigned char temp = 
+						snprintf(string + numCharater , sizeof(string) - numCharater , "%s", stateStr);
 					numCharater += temp;
 				}
 			}
 			lcd_buffer_insert(LINE_0, 0, string, True);
+
 			snprintf(string, sizeof(string), "%s, let %s!", pT_Count->doneStr, recommended_next_state());
 			lcd_buffer_insert(LINE_1, 0, string, True);
 		}
@@ -585,7 +586,33 @@ void countDownTaskHdl()
 	else // Ko có pointer => đang ở Stop State
 	{
 		lcd_buffer_clean();
-		lcd_buffer_insert(LINE_0, 0, "   Pomodoro", False);
+		char string[NUMBER_OF_COLUM + 1];
+		memset(string, 0, sizeof(string));
+		char numCharater = 0;
+		for (int i = (NUMBER_OF_COLUM / 2) - 1; i >= 0; i--)
+		{
+			const char *stateStr = NULL;
+			if (g_Data.cntDown.prevSucState[i] == workState)
+			{
+				stateStr = g_Data.work.str;
+			}
+			else if (g_Data.cntDown.prevSucState[i] == sBreakState)
+			{
+				stateStr = g_Data.sBreak.str;
+			}
+			else if (g_Data.cntDown.prevSucState[i] == lBreakState)
+			{
+				stateStr = g_Data.lBreak.str;
+			}
+
+			if (stateStr != NULL)
+			{
+				unsigned char temp = 
+					snprintf(string + numCharater , sizeof(string) - numCharater , "%s", stateStr);
+				numCharater += temp;
+			}
+		}
+		lcd_buffer_insert(LINE_0, 0, string, False);
 		lcd_buffer_insert(LINE_1, 0, "Press Wo/Sb/Lb!" , False);
 	}
 }
@@ -646,7 +673,6 @@ void summaryTaskHdl()
 	lcd_buffer_insert(LINE_0, 12, "Lb", False);
 	snprintf(string, sizeof(string), "%d/%d", g_Data.lBreak.success, g_Data.lBreak.total);
 	lcd_buffer_insert(LINE_1, 12, string, False);
-
 }
 
 void modifyButtonHdl(E_Button button)
@@ -675,6 +701,16 @@ void modifyButtonHdl(E_Button button)
 				break;
 			}
 		case stopB:
+			{
+				//XXX set to demo
+				T_Count *pCount1 = &g_Data.work;
+				pCount1->period = 10 * SECOND_TO_MILISECONDS;
+				pCount1 = &g_Data.sBreak;
+				pCount1->period = 3 * SECOND_TO_MILISECONDS;
+				pCount1 = &g_Data.lBreak;
+				pCount1->period = 5 * SECOND_TO_MILISECONDS;
+				break;
+			}
 		default:
 			{
 				break;
@@ -745,7 +781,7 @@ void setup()
 		lcd.setCursor(COLUM_0,LINE_1);
 		lcd.print(i); //Dùng hàm size_t Print::print(int n, int base)
 		              //ở arduino-1.6.6/hardware/arduino/avr/cores/arduino/Print.cpp
-		delay(100); //dừng 1000ms, hàm này ở arduino-1.6.6/hardware/arduino/avr/cores/arduino/wiring.c
+		delay(200); //dừng 1000ms, hàm này ở arduino-1.6.6/hardware/arduino/avr/cores/arduino/wiring.c
 	}
 
 	// In "Pomodoro Now!"
@@ -768,7 +804,7 @@ void setup()
 		lcd.setCursor(j,LINE_1); // XXX need to comment here
 		lcd.print(string[j]); // Dùng hàm size_t Print::print(char c)
 	}
-	delay(100);
+	delay(300);
 	// Ở đây ta thấy cùng cách viết là lcd.print nhưng hàm thực sự được gọi trong runtime
 	// là khác nhau. Kỹ thuật overside function được sử dụng để chọn hàm phù hợp nhất trong
 	// đống hàm có trùng tên
@@ -787,21 +823,23 @@ void setup()
 	g_Data.lBreak.str         = "Lb";
 
 	T_Count *pCount = &g_Data.work;
-	pCount->period = 10 * SECOND_TO_MILISECONDS;
+	pCount->period = 25 * MINUTE_TO_MILISECOND;
 	pCount->success = 0;
 	pCount->total = 0;
 
 	pCount = &g_Data.sBreak;
-	pCount->period = 3 * SECOND_TO_MILISECONDS;
+	pCount->period = 5 * MINUTE_TO_MILISECOND;
 	pCount->success = 0;
 	pCount->total = 0;
 
 	pCount = &g_Data.lBreak;
-	pCount->period = 5 * SECOND_TO_MILISECONDS;
+	pCount->period = 15 * MINUTE_TO_MILISECOND;
 	pCount->success = 0;
 	pCount->total = 0;
 
-	for (int k = 0; k < NUMBER_OF_COLUM; k++)
+	for (int k = 0;
+	     k < (sizeof(g_Data.cntDown.prevSucState)/ sizeof(g_Data.cntDown.prevSucState[0]));
+	     k++)
 	{
 		g_Data.cntDown.prevSucState[k] = stopState;
 	}
